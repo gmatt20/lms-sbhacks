@@ -2,7 +2,7 @@
 title = "Next.js Voice Agent Starter"
 description = "Get started using Deepgram's Voice Agent API with this Next.js demo app"
 author = "Deepgram DX Team <devrel@deepgram.com> (https://developers.deepgram.com)"
-useCase = "Agent"
+useCase = "Voice Agent"
 language = "TypeScript"
 framework = "Next.js"
 sdk = "3.8.12"
