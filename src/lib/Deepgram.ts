@@ -79,4 +79,3 @@ export const getDeepgramClient = (apiKey: string): AgentLiveClient | null => {
   deepgram.setApiKey(apiKey);
   return deepgram.getClient();
 };
-
