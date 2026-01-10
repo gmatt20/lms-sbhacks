@@ -1,6 +1,6 @@
 "use client";
 
-import { ListenModel, SpeechModel, ThinkModel } from "@/app/lib/Models";
+import { ListenModel, SpeechModel, ThinkModel } from "@/lib/Models";
 import { Mic } from "../mic/Mic";
 import { useState, useRef } from "react";
 import {
@@ -8,7 +8,7 @@ import {
   DeepgramClient,
   type AgentLiveClient,
 } from "@deepgram/sdk";
-import { voiceAgentLog } from "@/app/lib/Logger";
+import { voiceAgentLog } from "@/lib/Logger";
 
 /**
  * Main voice agent interface component

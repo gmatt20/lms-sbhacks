@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { type AgentLiveClient } from "@deepgram/sdk";
-import { voiceAgentLog } from "@/app/lib/Logger";
+import { voiceAgentLog } from "@/lib/Logger";
 
 interface MicProps {
   state: "open" | "closed" | "loading";
