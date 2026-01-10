@@ -19,7 +19,8 @@ export const Mic = ({ state, client, onError }: MicProps) => {
   const isRecordingRef = useRef(false);
 
   // Firefox detection
-  const isFirefox = typeof window !== 'undefined' && navigator.userAgent.includes('Firefox');
+  const isFirefox =
+    typeof window !== "undefined" && navigator.userAgent.includes("Firefox");
 
   // === RECORDING CONTROL ===
   const startRecording = useCallback(async () => {
@@ -32,10 +33,9 @@ export const Mic = ({ state, client, onError }: MicProps) => {
         // Firefox ignores most constraints anyway, so use minimal approach
         audioConstraints = {
           echoCancellation: true,
-          noiseSuppression: false,  // Explicitly false - but Firefox may ignore this
+          noiseSuppression: false, // Explicitly false - but Firefox may ignore this
           // Skip other constraints that Firefox ignores
         };
-
       } else {
         // Chrome/Safari: Full constraints
         audioConstraints = {
@@ -43,17 +43,15 @@ export const Mic = ({ state, client, onError }: MicProps) => {
           noiseSuppression: true,
           autoGainControl: true,
           sampleRate: 24000, // Match agent configuration
-          channelCount: 1
+          channelCount: 1,
         };
-
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: audioConstraints
+        audio: audioConstraints,
       });
 
       streamRef.current = stream;
-
 
       // Firefox-specific handling for sample rate mismatch
       let audioContext;
@@ -62,20 +60,17 @@ export const Mic = ({ state, client, onError }: MicProps) => {
         // Create AudioContext with no constraints to match Firefox's default
         audioContext = new AudioContext();
 
-
         // Ensure AudioContext is running
-        if (audioContext.state === 'suspended') {
+        if (audioContext.state === "suspended") {
           await audioContext.resume();
           // Give Firefox a moment to fully initialize
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       } else {
         // Chrome/Safari: Use optimized 24kHz as requested
         audioContext = new AudioContext({ sampleRate: 24000 });
-
       }
       audioContextRef.current = audioContext;
-
 
       // Create audio source from stream
       const source = audioContext.createMediaStreamSource(stream);
@@ -100,8 +95,6 @@ export const Mic = ({ state, client, onError }: MicProps) => {
           for (let i = 0; i < downsampledLength; i++) {
             processedData[i] = inputData[i * 2]; // Simple decimation
           }
-
-
         } else {
           // Chrome/Safari: Use original 24kHz data
           processedData = inputData;
@@ -112,7 +105,7 @@ export const Mic = ({ state, client, onError }: MicProps) => {
         for (let i = 0; i < processedData.length; i++) {
           // Clamp to prevent distortion
           const sample = Math.max(-1, Math.min(1, processedData[i]));
-          pcmData[i] = Math.round(sample * 0x7FFF);
+          pcmData[i] = Math.round(sample * 0x7fff);
         }
 
         const audioBuffer = pcmData.buffer;
@@ -131,8 +124,9 @@ export const Mic = ({ state, client, onError }: MicProps) => {
       isRecordingRef.current = true;
       setIsRecording(true);
 
-      voiceAgentLog.microphone(`Real-time microphone streaming started (${audioContext.sampleRate}Hz)`);
-
+      voiceAgentLog.microphone(
+        `Real-time microphone streaming started (${audioContext.sampleRate}Hz)`,
+      );
     } catch (error) {
       voiceAgentLog.error(`Error starting microphone: ${error}`);
       onError?.(`Microphone access error: ${error}`);
@@ -157,7 +151,7 @@ export const Mic = ({ state, client, onError }: MicProps) => {
     }
 
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
 
@@ -181,7 +175,6 @@ export const Mic = ({ state, client, onError }: MicProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, client]); // Exclude function deps to prevent infinite loop
 
-
   if (state === "loading") {
     return (
       <div className="dg-status dg-status--warning">
@@ -198,12 +191,14 @@ export const Mic = ({ state, client, onError }: MicProps) => {
     );
   }
 
-
-
   return (
-    <div className={`dg-status ${isRecording ? 'dg-status--success' : 'dg-status--primary'}`}>
+    <div
+      className={`dg-status ${isRecording ? "dg-status--success" : "dg-status--primary"}`}
+    >
       {isRecording ? (
-        <>🎙️ Streaming audio to agent ({isFirefox ? '48kHz' : '24kHz'} linear16)</>
+        <>
+          🎙️ Streaming audio to agent ({isFirefox ? "48kHz" : "24kHz"} linear16)
+        </>
       ) : (
         <>🎤 Microphone ready for real-time streaming</>
       )}

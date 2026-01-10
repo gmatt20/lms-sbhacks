@@ -7,4 +7,3 @@ interface ButtonLinkProps {
 export const ButtonLink = ({ url, size, children }: ButtonLinkProps) => {
   return <a href={url}>{children}</a>;
 };
-
