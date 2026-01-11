@@ -130,9 +130,9 @@ export default function SubmissionReview() {
             {submission.score !== null && submission.score !== undefined ? `${submission.score}/${assignment?.maxScore || 100}` : 'Pending'}
           </p>
         </div>
-        <div className="border border-border bg-card p-4 shadow-sm">
+        <div className={`border p-4 shadow-sm ${submission.needsInterview && !submission.interviewCompleted ? 'border-primary bg-primary/5' : 'border-border bg-card'}`}>
           <p className="text-sm text-muted-foreground">Interview</p>
-          <p className="mono-emph text-2xl font-semibold text-foreground">
+          <p className={`mono-emph text-2xl font-semibold ${submission.needsInterview && !submission.interviewCompleted ? 'text-primary' : 'text-foreground'}`}>
             {submission.interviewCompleted ? 'Done' : submission.needsInterview ? 'Needed' : 'No'}
           </p>
         </div>

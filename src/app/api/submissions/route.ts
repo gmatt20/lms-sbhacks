@@ -111,7 +111,7 @@ export async function POST(request: Request) {
       success: true,
       submissionId: result.insertedId.toString(),
       cheatingScore,
-      needsInterview: cheatingScore > 0.75,
+      needsInterview: cheatingScore > PLAGIARISM_THRESHOLD,
       analysis
     });
   } catch (error) {

@@ -650,28 +650,75 @@ def get_assignment_pdf(assignment_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/assignments/<assignment_id>", methods=["GET"])
+@app.route("/api/assignments/<assignment_id>", methods=["GET", "PUT"])
 def get_assignment(assignment_id):
-    """Get a single assignment by ID."""
-    try:
-        assignment = assignments_col.find_one({"_id": ObjectId(assignment_id)})
-        
-        if not assignment:
-            return jsonify({"error": "Assignment not found"}), 404
-        
-        assignment["_id"] = str(assignment["_id"])
-        assignment["courseId"] = str(assignment["courseId"])
+    """Get or update a single assignment by ID."""
+    if request.method == "GET":
+        try:
+            assignment = assignments_col.find_one({"_id": ObjectId(assignment_id)})
+            
+            if not assignment:
+                return jsonify({"error": "Assignment not found"}), 404
+            
+            assignment["_id"] = str(assignment["_id"])
+            assignment["courseId"] = str(assignment["courseId"])
 
-        # Attach audit info if available
-        homework = homeworks_col.find_one({"assignment_id": assignment_id})
-        if homework:
-            assignment["mutations"] = homework.get("mutations", [])
-            assignment["mutated_prompt"] = homework.get("mutated_prompt", "")
-        
-        return jsonify({"assignment": assignment})
-    except Exception as e:
-        print(f"[ASSIGNMENT] Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+            # Attach audit info if available
+            homework = homeworks_col.find_one({"assignment_id": assignment_id})
+            if homework:
+                assignment["mutations"] = homework.get("mutations", [])
+                assignment["mutated_prompt"] = homework.get("mutated_prompt", "")
+            
+            return jsonify({"assignment": assignment})
+        except Exception as e:
+            print(f"[ASSIGNMENT] Error: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+    
+    else:  # PUT
+        try:
+            data = request.json or {}
+            content = data.get("content")
+            
+            if not content:
+                return jsonify({"error": "Content is required"}), 400
+            
+            # Regenerate mutations for the new content
+            print(f"[ASSIGNMENT] Regenerating mutations for assignment {assignment_id}")
+            from gemini import mutate_prompt # Ensure mutate_prompt is available
+            mutation_result = mutate_prompt(prompt_text=content)
+            mutated_text = mutation_result["mutated"]
+            mutations = mutation_result["mutations"]
+            changes = mutation_result["changes"]
+            
+            # Update homework metadata in MongoDB
+            homework_doc = {
+                "assignment_id": assignment_id,
+                "original_prompt": content,
+                "mutated_prompt": mutated_text,
+                "mutations": mutations,
+                "changes": changes
+            }
+            
+            homeworks_col.update_one(
+                {"assignment_id": assignment_id},
+                {"$set": homework_doc},
+                upsert=True
+            )
+            
+            # Update assignment content
+            assignments_col.update_one(
+                {"_id": ObjectId(assignment_id)},
+                {"$set": {"instructions": content, "updatedAt": datetime.now(UTC)}} # Changed 'content' to 'instructions' to match schema
+            )
+            
+            return jsonify({
+                "success": True,
+                "mutations": mutations,
+                "changes": changes
+            })
+        except Exception as e:
+            print(f"[ASSIGNMENT] Update error: {str(e)}")
+            return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/assignments/<assignment_id>/submissions", methods=["GET"])

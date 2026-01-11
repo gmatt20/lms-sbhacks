@@ -348,7 +348,7 @@ export const Body = () => {
   return (
     <main className="">
       {error && (
-        <div className="text-red-600 bg-red-100 border border-red-300 p-2 rounded">
+        <div className="text-red-600 bg-red-100 border border-red-300 p-2">
           {error}
         </div>
       )}
@@ -362,7 +362,7 @@ export const Body = () => {
             Get a token to open the line; then you can speak and listen right away.
           </p>
           <Button
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-lg"
+            className="bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 text-lg"
             onClick={authenticate}
           >
             🔐 Get token
@@ -378,7 +378,7 @@ export const Body = () => {
               <label className="flex flex-col gap-1">
                 <span>Listen Model:</span>
                 <select
-                  className="border rounded px-2 py-1"
+                  className="border px-2 py-1"
                   name="listen"
                   value={listenModel}
                   onChange={(e) =>
@@ -395,7 +395,7 @@ export const Body = () => {
               <label className="flex flex-col gap-1">
                 <span>Think Model:</span>
                 <select
-                  className="border rounded px-2 py-1"
+                  className="border px-2 py-1"
                   name="think"
                   value={thinkModel}
                   onChange={(e) => setThinkModel(e.target.value as ThinkModel)}
@@ -409,7 +409,7 @@ export const Body = () => {
               <label className="flex flex-col gap-1">
                 <span>Speech Model:</span>
                 <select
-                  className="border rounded px-2 py-1"
+                  className="border px-2 py-1"
                   name="speech"
                   value={speechModel}
                   onChange={(e) =>
@@ -427,7 +427,7 @@ export const Body = () => {
             </div>
             <div>
               <button
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-lg"
+                className="bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 text-lg"
                 type="button"
                 onClick={connect}
               >
@@ -444,8 +444,8 @@ export const Body = () => {
             <h2 className="text-xl font-bold mb-2">Voice channel ready</h2>
             <div
               className={`${isAgentSpeaking
-                ? "text-blue-700 bg-blue-200 border border-blue-400 p-2 rounded"
-                : "text-green-700 bg-green-200 border border-green-400 p-2 rounded"
+                ? "text-blue-700 bg-blue-200 border border-blue-400 p-2"
+                : "text-green-700 bg-green-200 border border-green-400 p-2"
                 }`}
             >
               {isAgentSpeaking
@@ -453,7 +453,7 @@ export const Body = () => {
                 : "✅ Ready to talk"}
             </div>
             <button
-              className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 mt-4"
+              className="bg-gray-600 text-white px-4 py-2 hover:bg-gray-700 mt-4"
               onClick={disconnect}
             >
               🔌 Disconnect
@@ -472,7 +472,7 @@ export const Body = () => {
               }}
             >
               {transcript.length === 0 ? (
-                <div className="text-blue-600 bg-blue-100 border border-blue-300 p-2 rounded">
+                <div className="text-blue-600 bg-blue-100 border border-blue-300 p-2">
                   <em>The conversation will appear here, wait a bit.</em>
                 </div>
               ) : (

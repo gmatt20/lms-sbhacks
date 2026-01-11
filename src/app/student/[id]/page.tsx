@@ -85,7 +85,7 @@ export default function AssignmentView() {
 
       <div className="mb-6">
         <h2 className="mb-2 text-lg font-semibold">Instructions</h2>
-        <div className="rounded border bg-card p-4">
+        <div className="border bg-card p-4">
           <PDFViewer pdfBase64={pdfBase64} />
         </div>
       </div>
@@ -93,7 +93,7 @@ export default function AssignmentView() {
       {assignment.rubricVisibleToStudents && assignment.rubric && assignment.rubric.length > 0 && (
         <div className="mb-8">
           <h2 className="mb-2 text-lg font-semibold">Rubric</h2>
-          <div className="rounded border bg-card overflow-hidden">
+          <div className="border bg-card overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted">
                 <tr>
@@ -126,7 +126,6 @@ export default function AssignmentView() {
 
       <div>
         <h2 className="mb-2 text-lg font-semibold">Submit your response</h2>
-        <p className="mb-3 text-sm text-muted-foreground">Share your own work, keep it clear and on time.</p>
         <SubmissionForm
           assignmentId={params.id as string}
           studentId={user?.id || ''}

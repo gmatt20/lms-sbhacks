@@ -1,1 +1,1 @@
-export const PLAGIARISM_THRESHOLD = 0.75;
+export const PLAGIARISM_THRESHOLD = 0.5;

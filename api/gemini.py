@@ -302,32 +302,84 @@ Original Prompt:
         # Apply mutations to the prompt
         mutated = prompt_text
         changes = []
+        failed_mutations = []
         
         for mutation in mutations:
             mutation_type = mutation.get("type", "replacement").lower()
             orig = mutation.get("original_text", "")
             mut = mutation.get("mutated_text", "")
+            detail = mutation.get("detail", "")
             
-            print(f"DEBUG: Processing {mutation_type}: '{orig}' -> '{mut}'")
+            print(f"DEBUG: Processing {mutation_type}: '{orig[:50]}...' -> '{mut[:50]}...'")
             
             # Handle replacements (both "replacement" and "atomic_replacement")
             if "replacement" in mutation_type and orig and mut:
-                mutated = mutated.replace(orig, mut)
-                print(f"DEBUG: Applied replacement")
+                if orig in mutated:
+                    mutated = mutated.replace(orig, mut, 1)  # Replace first occurrence only
+                    print(f"DEBUG: Applied replacement successfully")
+                    changes.append(detail)
+                else:
+                    print(f"DEBUG: WARNING - Replacement failed, original text not found: '{orig[:100]}'")
+                    failed_mutations.append({"type": mutation_type, "reason": "original_text not found", "orig": orig[:100]})
             # Handle injections (both "injection" and "secret_injection")
-            elif "injection" in mutation_type:
-                if orig and mut:
-                    # Model provided full sentence replacement
-                    mutated = mutated.replace(orig, mut)
-                    print(f"DEBUG: Applied injection as replacement")
-                elif mut:
-                    # Model provided just the addition
-                    mutated = mutated.rstrip() + " " + mut
-                    print(f"DEBUG: Applied injection as append")
-            
-            changes.append(mutation["detail"])
+            elif "injection" in mutation_type and mut:
+                applied = False
+                
+                # Strategy 1: If orig is provided and exists, replace it with the mutated version
+                if orig and orig in mutated:
+                    mutated = mutated.replace(orig, mut, 1)
+                    print(f"DEBUG: Applied injection as targeted replacement")
+                    applied = True
+                else:
+                    # Strategy 2: Find a good insertion point based on context
+                    # Look for common instruction patterns to insert after
+                    insertion_patterns = [
+                        "\n\n",  # Between paragraphs
+                        ". ",    # After sentences
+                        ":\n",   # After colons (often used before lists)
+                    ]
+                    
+                    for pattern in insertion_patterns:
+                        if pattern in mutated:
+                            # Find the last occurrence of this pattern in first half of text
+                            # (to avoid inserting too late)
+                            midpoint = len(mutated) // 2
+                            first_half = mutated[:midpoint]
+                            last_idx = first_half.rfind(pattern)
+                            
+                            if last_idx != -1:
+                                insert_pos = last_idx + len(pattern)
+                                mutated = mutated[:insert_pos] + mut + " " + mutated[insert_pos:]
+                                print(f"DEBUG: Inserted injection after '{pattern}' at position {insert_pos}")
+                                applied = True
+                                break
+                    
+                    # Strategy 3: Append at the end if no good insertion point found
+                    if not applied:
+                        mutated = mutated.rstrip() + " " + mut
+                        print(f"DEBUG: Appended injection to end")
+                        applied = True
+                
+                if applied:
+                    changes.append(detail)
+                else:
+                    print(f"DEBUG: WARNING - Injection failed: '{mut[:100]}'")
+                    failed_mutations.append({"type": mutation_type, "reason": "no insertion point", "mut": mut[:100]})
         
+        # Verify all mutations were applied
+        if failed_mutations:
+            print(f"DEBUG: WARNING - {len(failed_mutations)} mutations failed to apply:")
+            for fm in failed_mutations:
+                print(f"  - {fm}")
+        
+        # Assert that mutated text is different from original
+        if mutated == prompt_text:
+            print(f"DEBUG: ERROR - No mutations were applied! Mutated text is identical to original")
+        
+        success_rate = len(changes) / len(mutations) if mutations else 0
+        print(f"DEBUG: Mutation success rate: {len(changes)}/{len(mutations)} ({success_rate:.1%})")
         print(f"DEBUG: Original length: {len(prompt_text)}, Mutated length: {len(mutated)}")
+        print(f"DEBUG: Mutated text preview: {mutated[:500]}...")
         
         return {
             "original": prompt_text,
