@@ -7,6 +7,7 @@ const Assignment = require("./db/assignment");
 const ModifiedAssignment = require("./db/modifiedAssignment");
 const Submission = require("./db/submission");
 const DetectionResult = require("./db/detectionResult");
+const Interview = require("./db/interview");
 
 // CONNECT TO MONGODB
 const MONGO_URI = process.env.MONGODB_URI || "mongodb+srv://admin:JfxU7wYYrQEaAkXR@lms.atwxuvd.mongodb.net/?appName=lmsn";
@@ -16,8 +17,9 @@ async function seed() {
     await mongoose.connect(MONGO_URI);
     console.log("✅ Connected to MongoDB");
 
-    // Clear existing data
+    // Clear existing data (in order to respect foreign key dependencies)
     await Promise.all([
+      Interview.deleteMany({}),
       DetectionResult.deleteMany({}),
       Submission.deleteMany({}),
       ModifiedAssignment.deleteMany({}),
@@ -98,8 +100,8 @@ async function seed() {
       status: "submitted"
     });
 
-    // Create detection result
-    await DetectionResult.create({
+    // Create detection result (score > 70% triggers interview)
+    const detectionResult = await DetectionResult.create({
       submissionId: submission._id,
       assignmentId: assignment._id,
       modifiedAssignmentId: modifiedAssignment._id,
@@ -126,12 +128,62 @@ async function seed() {
       matchesOriginal: 0,
       matchesModified: 2,
       matchesNeither: 0,
-      aiDetectionScore: 100, // 100% matches modified (high AI likelihood)
+      aiDetectionScore: 100, // 100% matches modified (high AI likelihood) - triggers interview
       threshold: 70,
       thresholdExceeded: true,
       isFlagged: true,
       flagReason: "Score exceeded threshold - high likelihood of AI-generated content",
       confidenceLevel: "high"
+    });
+
+    // Create interview (only stored if student fails - verdict is LIKELY_CHEATED or UNCLEAR)
+    // In this example, student failed the interview
+    await Interview.create({
+      submissionId: submission._id,
+      assignmentId: assignment._id,
+      studentId: student._id,
+      detectionResultId: detectionResult._id,
+      transcript: [
+        {
+          role: "agent",
+          content: "I want to check you understand your assignment. Can you tell me, in your own words, what you wrote?",
+          timestamp: new Date()
+        },
+        {
+          role: "user",
+          content: "I wrote about artificial intelligence and its impacts.",
+          timestamp: new Date()
+        },
+        {
+          role: "agent",
+          content: "What was the main point you were trying to make?",
+          timestamp: new Date()
+        },
+        {
+          role: "user",
+          content: "Um, I'm not really sure...",
+          timestamp: new Date()
+        }
+      ],
+      questions: [
+        {
+          question: "Can you summarize what you wrote in your own words?",
+          answer: "I wrote about artificial intelligence and its impacts.",
+          timestamp: new Date()
+        },
+        {
+          question: "What was the main point you were trying to make?",
+          answer: "Um, I'm not really sure...",
+          timestamp: new Date()
+        }
+      ],
+      verdict: "LIKELY_CHEATED", // Student failed interview - stored in database
+      verdictReason: "Student was unable to explain main concepts from their submission",
+      confidenceScore: 85,
+      startedAt: new Date(Date.now() - 10 * 60 * 1000), // 10 minutes ago
+      completedAt: new Date(),
+      interviewDuration: 600, // 10 minutes in seconds
+      status: "pending_review" // Waiting for professor review
     });
 
     console.log("🌱 Database seeded successfully!");
@@ -140,7 +192,8 @@ async function seed() {
     console.log(`   - Created 1 assignment`);
     console.log(`   - Created 1 modified assignment`);
     console.log(`   - Created 1 submission`);
-    console.log(`   - Created 1 detection result`);
+    console.log(`   - Created 1 detection result (score: 100% - triggers interview)`);
+    console.log(`   - Created 1 interview (verdict: LIKELY_CHEATED - stored for review)`);
     
     process.exit(0);
   } catch (err) {
