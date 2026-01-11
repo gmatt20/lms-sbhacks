@@ -2,16 +2,36 @@
 
 import { useUser } from '@clerk/nextjs';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export default function TeacherClasses() {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!isLoaded) return;
+    
+    if (!user) {
+      router.push('/');
+      return;
+    }
+    
+    const role = user.publicMetadata?.role as string;
+    
+    if (!role) {
+      router.push('/onboarding');
+      return;
+    }
+    
+    if (role !== 'teacher') {
+      router.push('/student');
+      return;
+    }
     
     fetch(`/api/courses?teacherId=${user.id}`)
       .then(res => res.json())
@@ -23,9 +43,14 @@ export default function TeacherClasses() {
         console.error('Error loading courses:', err);
         setLoading(false);
       });
-  }, [user]);
+  }, [user, isLoaded, router]);
 
-  if (loading) return <div className="p-6">Loading your classes...</div>;
+  if (!isLoaded || loading) return <LoadingSpinner text="Loading your classes..." />;
+  
+  const role = user?.publicMetadata?.role as string;
+  if (!user || !role || role !== 'teacher') {
+    return <div className="p-6">Redirecting...</div>;
+  }
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">

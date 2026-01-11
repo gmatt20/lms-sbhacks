@@ -6,12 +6,14 @@ from pymongo import MongoClient
 from bson import ObjectId
 import pypdf
 import os
+import hashlib
+import json
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timedelta
 
 load_dotenv()
 
-from gemini import mutate_prompt, detect_indicators
+from gemini import mutate_prompt, detect_indicators, generate_rubric_suggestions, grade_with_rubric
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -19,9 +21,10 @@ app = Flask(__name__)
 # Configure CORS to allow Next.js dev server
 CORS(app, resources={
     r"/*": {
-        "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type"]
+        "origins": ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5000"],
+        "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type", "Authorization"],
+        "supports_credentials": True
     }
 })
 
@@ -34,6 +37,36 @@ submissions_col = db["submissions"]
 courses_col = db["courses"]
 assignments_col = db["assignments"]
 users_col = db["users"]
+cache_col = db["cache"]
+
+# PDF cache directory
+PDF_CACHE_DIR = os.path.join(os.path.dirname(__file__), "pdf_cache")
+os.makedirs(PDF_CACHE_DIR, exist_ok=True)
+
+
+def _hash_key(parts):
+    joined = "||".join([str(p) for p in parts])
+    return hashlib.sha256(joined.encode("utf-8")).hexdigest()
+
+
+def cache_get(key: str):
+    doc = cache_col.find_one({"key": key, "expiresAt": {"$gt": datetime.utcnow()}})
+    return doc.get("value") if doc else None
+
+
+def cache_set(key: str, value, ttl_seconds: int = 3600):
+    cache_col.update_one(
+        {"key": key},
+        {
+            "$set": {
+                "key": key,
+                "value": value,
+                "createdAt": datetime.utcnow(),
+                "expiresAt": datetime.utcnow() + timedelta(seconds=ttl_seconds)
+            }
+        },
+        upsert=True
+    )
 
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
@@ -355,27 +388,37 @@ def get_courses():
     """Get courses for a teacher."""
     teacher_id = request.args.get("teacherId")
     
+    print(f"[FLASK] /api/courses called with teacherId: {teacher_id}")
+    
     if not teacher_id:
+        print("[FLASK] Error: teacherId missing")
         return jsonify({"error": "teacherId required"}), 400
     
-    courses = list(courses_col.find({"professorId": ObjectId(teacher_id)}))
+    # teacher_id is now a Clerk user ID (string), not ObjectId
+    print(f"[FLASK] Querying courses with professorId: {teacher_id}")
+    courses = list(courses_col.find({"professorId": teacher_id}))
+    
+    print(f"[FLASK] Found {len(courses)} courses")
+    for course in courses:
+        print(f"[FLASK] Course: {course.get('name')} (ID: {course['_id']}, Prof: {course.get('professorId')})")
     
     # Add counts
     for course in courses:
         course["_id"] = str(course["_id"])
-        course["professorId"] = str(course["professorId"])
+        # professorId is already a string (Clerk ID)
         course["studentCount"] = len(course.get("enrolledStudents", []))
         course["assignmentCount"] = assignments_col.count_documents({"courseId": ObjectId(course["_id"])})
-        course["enrolledStudents"] = [str(sid) for sid in course.get("enrolledStudents", [])]
     
     # Calculate stats
     total_assignments = sum(c["assignmentCount"] for c in courses)
-    total_submissions = submissions_col.count_documents({"teacherId": ObjectId(teacher_id)})
+    total_submissions = submissions_col.count_documents({"teacherId": teacher_id})
     pending_reviews = submissions_col.count_documents({
-        "teacherId": ObjectId(teacher_id),
+        "teacherId": teacher_id,
         "needsInterview": True,
         "interviewCompleted": {"$ne": True}
     })
+    
+    print(f"[FLASK] Returning {len(courses)} courses with stats: {total_assignments} assignments, {total_submissions} submissions, {pending_reviews} pending")
     
     return jsonify({
         "courses": courses,
@@ -397,10 +440,9 @@ def get_course(course_id):
             return jsonify({"error": "Course not found"}), 404
         
         course["_id"] = str(course["_id"])
-        course["professorId"] = str(course["professorId"])
+        # professorId is already a string (Clerk ID)
         course["studentCount"] = len(course.get("enrolledStudents", []))
         course["assignmentCount"] = assignments_col.count_documents({"courseId": ObjectId(course_id)})
-        course["enrolledStudents"] = [str(sid) for sid in course.get("enrolledStudents", [])]
         
         return jsonify({"course": course})
     except Exception as e:
@@ -433,7 +475,7 @@ def course_assignments(course_id):
             
             assignment = {
                 "courseId": ObjectId(course_id),
-                "professorId": ObjectId(data.get("teacherId")),
+                "professorId": data.get("teacherId"),  # Clerk user ID (string)
                 "title": data.get("title"),
                 "description": data.get("description", ""),
                 "instructions": data.get("instructions"),
@@ -447,7 +489,7 @@ def course_assignments(course_id):
             result = assignments_col.insert_one(assignment)
             assignment["_id"] = str(result.inserted_id)
             assignment["courseId"] = str(assignment["courseId"])
-            assignment["professorId"] = str(assignment["professorId"])
+            # professorId is already a string
             assignment["submissionCount"] = 0
             
             return jsonify({"assignment": assignment}), 201
@@ -455,7 +497,274 @@ def course_assignments(course_id):
             return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/assignments/<assignment_id>/pdf", methods=["GET"])
+def get_assignment_pdf(assignment_id):
+    """Generate or retrieve cached assignment PDF with mutation markers."""
+    try:
+        # Check if assignment exists
+        assignment = assignments_col.find_one({"_id": ObjectId(assignment_id)})
+        if not assignment:
+            return jsonify({"error": "Assignment not found"}), 404
+        
+        # Check cache first
+        pdf_filename = f"{assignment_id}.pdf"
+        pdf_path = os.path.join(PDF_CACHE_DIR, pdf_filename)
+        
+        # Check if we have stored mutation data for this assignment
+        homework = homeworks_col.find_one({"assignment_id": assignment_id})
+        
+        if os.path.exists(pdf_path) and homework:
+            # Return cached PDF
+            print(f"[PDF] Returning cached PDF for assignment {assignment_id}")
+            return send_file(
+                pdf_path,
+                mimetype="application/pdf",
+                as_attachment=True,
+                download_name=f"{assignment.get('title', 'assignment')}.pdf"
+            )
+        
+        # Generate new PDF with mutations
+        print(f"[PDF] Generating new PDF for assignment {assignment_id}")
+        visible_text = assignment.get("instructions", "")
+        
+        # Use Gemini to create mutated version
+        from gemini import mutate_prompt
+        mutation_result = mutate_prompt(prompt_text=visible_text)
+        mutated_text = mutation_result["mutated"]
+        mutations = mutation_result["mutations"]
+        changes = mutation_result["changes"]
+        
+        # Generate PDF
+        pdf_bytes = build_secret_replacement_pdf(
+            visible_text=visible_text,
+            secret_text=mutated_text,
+            output_path=None
+        )
+        
+        # Save to cache
+        with open(pdf_path, "wb") as f:
+            f.write(pdf_bytes)
+        
+        # Store mutation metadata
+        if homework:
+            # Update existing
+            homeworks_col.update_one(
+                {"assignment_id": assignment_id},
+                {"$set": {
+                    "original_prompt": visible_text,
+                    "mutated_prompt": mutated_text,
+                    "mutations": mutations,
+                    "changes": changes,
+                    "pdf_path": pdf_path,
+                    "updated_at": datetime.now()
+                }}
+            )
+        else:
+            # Create new
+            homeworks_col.insert_one({
+                "assignment_id": assignment_id,
+                "teacher_id": assignment.get("professorId"),
+                "course_id": str(assignment.get("courseId")),
+                "original_prompt": visible_text,
+                "mutated_prompt": mutated_text,
+                "mutations": mutations,
+                "changes": changes,
+                "pdf_path": pdf_path,
+                "created_at": datetime.now()
+            })
+        
+        print(f"[PDF] PDF generated and cached at {pdf_path}")
+        
+        return send_file(
+            BytesIO(pdf_bytes),
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=f"{assignment.get('title', 'assignment')}.pdf"
+        )
+        
+    except Exception as e:
+        print(f"[PDF] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/assignments/<assignment_id>", methods=["GET"])
+def get_assignment(assignment_id):
+    """Get a single assignment by ID."""
+    try:
+        assignment = assignments_col.find_one({"_id": ObjectId(assignment_id)})
+        
+        if not assignment:
+            return jsonify({"error": "Assignment not found"}), 404
+        
+        assignment["_id"] = str(assignment["_id"])
+        assignment["courseId"] = str(assignment["courseId"])
+        
+        return jsonify({"assignment": assignment})
+    except Exception as e:
+        print(f"[ASSIGNMENT] Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/assignments/<assignment_id>/submissions", methods=["GET"])
+def get_assignment_submissions(assignment_id):
+    """Get all submissions for an assignment."""
+    try:
+        submissions = list(submissions_col.find({"assignmentId": ObjectId(assignment_id)}))
+        
+        for submission in submissions:
+            submission["_id"] = str(submission["_id"])
+            submission["assignmentId"] = str(submission["assignmentId"])
+        
+        print(f"[SUBMISSIONS] Found {len(submissions)} submissions for assignment {assignment_id}")
+        return jsonify({"submissions": submissions})
+    except Exception as e:
+        print(f"[SUBMISSIONS] Error: {str(e)}")
+        return jsonify({"error": str(e), "submissions": []}), 500
+
+
+@app.route("/api/assignments/rubric/generate", methods=["POST"])
+def generate_rubric():
+    data = request.json or {}
+    instructions = data.get("instructions", "")
+    title = data.get("title", "")
+    if not instructions:
+        return jsonify({"error": "instructions required"}), 400
+    cache_key = _hash_key(["rubric_gen", instructions])
+    cached = cache_get(cache_key)
+    if cached:
+        return jsonify({"rubric": cached, "cached": True})
+    rubric = generate_rubric_suggestions(instructions=instructions, title=title)
+    cache_set(cache_key, rubric, ttl_seconds=3600)
+    return jsonify({"rubric": rubric, "cached": False})
+
+
+@app.route("/api/assignments/<assignment_id>/rubric", methods=["GET", "PUT"])
+def assignment_rubric(assignment_id):
+    if request.method == "GET":
+        assignment = assignments_col.find_one({"_id": ObjectId(assignment_id)})
+        if not assignment:
+            return jsonify({"error": "Assignment not found"}), 404
+        rubric = assignment.get("rubric", [])
+        visible = assignment.get("rubricVisibleToStudents", False)
+        total = sum(item.get("maxPoints", 0) for item in rubric)
+        return jsonify({"rubric": rubric, "visibleToStudents": visible, "totalPoints": total})
+    else:
+        data = request.json or {}
+        rubric = data.get("rubric", [])
+        visible = bool(data.get("visibleToStudents", False))
+        total = sum(item.get("maxPoints", 0) for item in rubric)
+        assignments_col.update_one(
+            {"_id": ObjectId(assignment_id)},
+            {"$set": {
+                "rubric": rubric,
+                "rubricVisibleToStudents": visible,
+                "totalPoints": total,
+                "updatedAt": datetime.utcnow()
+            }}
+        )
+        return jsonify({"rubric": rubric, "visibleToStudents": visible, "totalPoints": total})
+
+
+def _grade_submission(submission_id):
+    submission = submissions_col.find_one({"_id": ObjectId(submission_id)})
+    if not submission:
+        return {"error": "Submission not found", "status": 404}
+    assignment = assignments_col.find_one({"_id": ObjectId(submission.get("assignmentId"))})
+    if not assignment:
+        return {"error": "Assignment not found", "status": 404}
+    rubric = assignment.get("rubric", [])
+    if not rubric:
+        return {"error": "Rubric not configured", "status": 400}
+    submission_text = submission.get("submittedText")
+    if not submission_text:
+        return {"error": "No submission text to grade", "status": 400}
+
+    rubric_hash = _hash_key(["rubric", json.dumps(rubric, sort_keys=True)])
+    cache_key = _hash_key(["grade", rubric_hash, submission_text])
+    cached = cache_get(cache_key)
+    if cached:
+        return {"result": cached, "cached": True, "status": 200}
+
+    grading = grade_with_rubric(submission_text=submission_text, rubric=rubric, instructions=assignment.get("instructions", ""))
+    criteria_results = grading.get("criteria", [])
+    # attach maxPoints
+    rubric_map = {item.get("id") or item.get("criterion"): item for item in rubric}
+    final_criteria = []
+    total_score = 0
+    total_max = 0
+    for item in rubric:
+        cid = item.get("id") or item.get("criterion")
+        matched = next((c for c in criteria_results if c.get("criterionId") == cid), None)
+        earned = matched.get("pointsEarned", 0) if matched else 0
+        max_pts = item.get("maxPoints", 0)
+        total_score += earned
+        total_max += max_pts
+        final_criteria.append({
+            "criterionId": cid,
+            "criterion": item.get("criterion"),
+            "maxPoints": max_pts,
+            "pointsEarned": earned,
+            "justification": (matched.get("justification") if matched else "")
+        })
+
+    result = {
+        "totalScore": total_score,
+        "maxScore": total_max,
+        "gradedAt": datetime.utcnow().isoformat(),
+        "criteria": final_criteria
+    }
+
+    submissions_col.update_one(
+        {"_id": ObjectId(submission_id)},
+        {"$set": {"autoGrade": result, "updatedAt": datetime.utcnow()}}
+    )
+    cache_set(cache_key, result, ttl_seconds=3600)
+    return {"result": result, "cached": False, "status": 200}
+
+
+@app.route("/api/submissions/<submission_id>/auto-grade", methods=["POST"])
+def auto_grade_submission(submission_id):
+    out = _grade_submission(submission_id)
+    if "error" in out:
+        return jsonify({"error": out["error"]}), out.get("status", 500)
+    return jsonify({"autoGrade": out["result"], "cached": out.get("cached", False)})
+
+
+@app.route("/api/submissions/<submission_id>/grade", methods=["GET"])
+def get_submission_grade(submission_id):
+    submission = submissions_col.find_one({"_id": ObjectId(submission_id)})
+    if not submission:
+        return jsonify({"error": "Submission not found"}), 404
+    if submission.get("autoGrade"):
+        return jsonify({"autoGrade": submission.get("autoGrade"), "cached": True})
+    out = _grade_submission(submission_id)
+    if "error" in out:
+        return jsonify({"error": out["error"]}), out.get("status", 500)
+    return jsonify({"autoGrade": out["result"], "cached": out.get("cached", False)})
+
+
+@app.route("/api/submissions/<submission_id>", methods=["GET"])
+def get_submission(submission_id):
+    """Get a single submission by ID."""
+    try:
+        submission = submissions_col.find_one({"_id": ObjectId(submission_id)})
+        
+        if not submission:
+            return jsonify({"error": "Submission not found"}), 404
+        
+        submission["_id"] = str(submission["_id"])
+        submission["assignmentId"] = str(submission["assignmentId"])
+        
+        return jsonify({"submission": submission})
+    except Exception as e:
+        print(f"[SUBMISSION] Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
+
 
     mode = os.environ.get("MODE", "serve")
     if mode == "write":

@@ -2,6 +2,7 @@ from google import genai
 from google.genai import types
 import json
 import os
+from typing import List, Dict, Any
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -56,6 +57,94 @@ def call_gemini(prompt: str, response_schema: dict = None) -> str:
             response_text += chunk.text
     
     return response_text
+
+
+def generate_rubric_suggestions(instructions: str, title: str = "") -> List[Dict[str, Any]]:
+    """Generate an atomic rubric tailored to the assignment instructions."""
+    response_schema = {
+        "type": "ARRAY",
+        "items": {
+            "type": "OBJECT",
+            "properties": {
+                "criterion": {"type": "STRING"},
+                "description": {"type": "STRING"},
+                "maxPoints": {"type": "INTEGER"}
+            }
+        }
+    }
+    prompt = f"""
+You are an expert high-school teacher designing a grading rubric.
+
+ASSIGNMENT TITLE: {title}
+INSTRUCTIONS:
+{instructions}
+
+Produce 4-8 rubric items. Each item must be atomic and objectively checkable by an LLM. Output JSON only.
+Rules:
+- Each item has: criterion (short), description (how to evaluate), maxPoints (integer)
+- Sum of maxPoints should be about 100 (but exact sum is fine)
+- Focus on clarity: one skill per item
+- Cover thesis/argument, evidence/use of sources, organization/coherence, style/grammar, citation/format (if relevant), task completion
+"""
+    raw = call_gemini(prompt, response_schema=response_schema)
+    try:
+        data = json.loads(raw)
+        # ensure integers
+        rubric = []
+        for idx, item in enumerate(data):
+            rubric.append({
+                "id": f"r{idx+1}",
+                "criterion": item.get("criterion", ""),
+                "description": item.get("description", ""),
+                "maxPoints": int(item.get("maxPoints", 0))
+            })
+        return rubric
+    except Exception:
+        return []
+
+
+def grade_with_rubric(submission_text: str, rubric: List[Dict[str, Any]], instructions: str = "") -> Dict[str, Any]:
+    """Grade a submission text using the rubric. Returns per-criterion scores and justifications."""
+    response_schema = {
+        "type": "OBJECT",
+        "properties": {
+            "criteria": {
+                "type": "ARRAY",
+                "items": {
+                    "type": "OBJECT",
+                    "properties": {
+                        "criterionId": {"type": "STRING"},
+                        "pointsEarned": {"type": "INTEGER"},
+                        "justification": {"type": "STRING"}
+                    }
+                }
+            }
+        }
+    }
+    rubric_text = json.dumps(rubric)
+    prompt = f"""
+You are grading a high-school assignment using an analytic rubric. Be concise and deterministic.
+
+ASSIGNMENT INSTRUCTIONS:
+{instructions}
+
+RUBRIC (JSON):
+{rubric_text}
+
+STUDENT SUBMISSION:
+{submission_text}
+
+For each rubric item:
+- Assign integer points between 0 and maxPoints
+- Provide a short justification (1-2 sentences)
+Return JSON with criteria array.
+"""
+    raw = call_gemini(prompt, response_schema=response_schema)
+    try:
+        data = json.loads(raw)
+        return data
+    except Exception:
+        return {"criteria": []}
 
 
 def mutate_prompt(prompt_text: str) -> dict:

@@ -5,25 +5,37 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export default function ClassDetail() {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const params = useParams();
   const router = useRouter();
   const [course, setCourse] = useState<any>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  
-  const [newAssignment, setNewAssignment] = useState({
-    title: '',
-    description: '',
-    instructions: '',
-    dueDate: '',
-  });
 
   useEffect(() => {
-    if (!params.id || !user) return;
+    if (!isLoaded) return;
+    
+    if (!user) {
+      router.push('/');
+      return;
+    }
+    
+    const role = user.publicMetadata?.role as string;
+    
+    if (!role) {
+      router.push('/onboarding');
+      return;
+    }
+    
+    if (role !== 'teacher') {
+      router.push('/student');
+      return;
+    }
+    
+    if (!params.id) return;
     
     Promise.all([
       fetch(`/api/courses/${params.id}`).then(r => r.json()),
@@ -36,35 +48,15 @@ export default function ClassDetail() {
       console.error('Error loading course:', err);
       setLoading(false);
     });
-  }, [params.id, user]);
+  }, [params.id, user, isLoaded, router]);
 
-  const handleCreateAssignment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      const response = await fetch(`/api/courses/${params.id}/assignments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...newAssignment,
-          teacherId: user?.id,
-          courseId: params.id,
-        }),
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setAssignments([data.assignment, ...assignments]);
-        setShowCreateForm(false);
-        setNewAssignment({ title: '', description: '', instructions: '', dueDate: '' });
-      }
-    } catch (error) {
-      console.error('Error creating assignment:', error);
-    }
-  };
-
-  if (loading) return <div className="p-6">Loading class details...</div>;
+  if (loading) return <LoadingSpinner text="Loading class details..." />;
   if (!course) return <div className="p-6">Class not found.</div>;
+  
+  const role = user?.publicMetadata?.role as string;
+  if (!user || !role || role !== 'teacher') {
+    return <div className="p-6">Redirecting...</div>;
+  }
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
@@ -87,69 +79,12 @@ export default function ClassDetail() {
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold">Assignments</h2>
           <Button
-            onClick={() => setShowCreateForm(!showCreateForm)}
+            asChild
             className="h-9 bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            {showCreateForm ? 'Cancel' : 'New assignment'}
+            <Link href={`/teacher/assignments/new?courseId=${params.id}`}>New assignment</Link>
           </Button>
         </div>
-
-        {showCreateForm && (
-          <form onSubmit={handleCreateAssignment} className="mt-4 space-y-4 border-t border-border pt-4">
-            <div>
-              <label className="mb-2 block text-sm font-semibold">Title</label>
-              <input
-                type="text"
-                value={newAssignment.title}
-                onChange={(e) => setNewAssignment({ ...newAssignment, title: e.target.value })}
-                required
-                className="w-full border border-border bg-white px-3 py-2 text-sm"
-                placeholder="Essay on climate change"
-              />
-            </div>
-            
-            <div>
-              <label className="mb-2 block text-sm font-semibold">Description</label>
-              <input
-                type="text"
-                value={newAssignment.description}
-                onChange={(e) => setNewAssignment({ ...newAssignment, description: e.target.value })}
-                className="w-full border border-border bg-white px-3 py-2 text-sm"
-                placeholder="Short summary for students"
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold">Instructions</label>
-              <textarea
-                value={newAssignment.instructions}
-                onChange={(e) => setNewAssignment({ ...newAssignment, instructions: e.target.value })}
-                required
-                rows={6}
-                className="w-full border border-border bg-white px-3 py-2 text-sm"
-                placeholder="Write detailed instructions for the assignment..."
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-semibold">Due date</label>
-              <input
-                type="datetime-local"
-                value={newAssignment.dueDate}
-                onChange={(e) => setNewAssignment({ ...newAssignment, dueDate: e.target.value })}
-                required
-                className="w-full border border-border bg-white px-3 py-2 text-sm"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              className="h-10 bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              Create assignment
-            </Button>
-          </form>
-        )}
       </div>
 
       <div className="space-y-3">
@@ -177,7 +112,7 @@ export default function ClassDetail() {
           </div>
         ))}
 
-        {assignments.length === 0 && !showCreateForm && (
+        {assignments.length === 0 && (
           <div className="border border-dashed border-border bg-card px-6 py-12 text-center">
             <p className="text-sm text-muted-foreground">No assignments yet. Click "New assignment" to create one.</p>
           </div>

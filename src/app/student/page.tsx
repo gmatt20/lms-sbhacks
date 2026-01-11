@@ -1,23 +1,56 @@
 'use client';
 
+import { useUser } from '@clerk/nextjs';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export default function StudentDashboard() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
   const [assignments, setAssignments] = useState([]);
 
   useEffect(() => {
+    if (!isLoaded) return;
+    
+    if (!user) {
+      router.push('/');
+      return;
+    }
+    
+    const role = user.publicMetadata?.role as string;
+    
+    if (!role) {
+      router.push('/onboarding');
+      return;
+    }
+    
+    if (role !== 'student') {
+      router.push('/teacher');
+      return;
+    }
+    
     fetch('/api/assignments')
       .then(res => res.json())
       .then(data => setAssignments(data.assignments));
-  }, []);
+  }, [user, isLoaded, router]);
+
+  if (!isLoaded || !user) {
+    return <LoadingSpinner />;
+  }
+
+  const role = user.publicMetadata?.role as string;
+  if (!role || role !== 'student') {
+    return <div className="p-6">Redirecting...</div>;
+  }
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-semibold leading-tight">Student Dashboard</h1>
+          <h1 className="text-3xl font-semibold leading-tight">My Portal</h1>
           <p className="text-sm text-muted-foreground">See your coursework, submit on time, and stay calm.</p>
         </div>
         <Button asChild variant="outline" className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted">

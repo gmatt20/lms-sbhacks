@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
-import { ObjectId } from 'mongodb';
 
 export async function GET(
   request: Request,
@@ -8,39 +6,27 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    console.log('[PDF] Fetching PDF for assignment:', id);
+    console.log('[PDF] Requesting PDF for assignment:', id);
 
-    const { db } = await connectToDatabase();
-
-    // Get assignment to find Python homework ID
-    const assignment = await db.collection('assignments').findOne({
-      _id: new ObjectId(id)
-    });
-
-    if (!assignment) {
-      console.error('[PDF] Assignment not found:', id);
-      return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
-    }
-
-    console.log('[PDF] Found assignment, fetching from Python API:', assignment.pythonHomeworkId);
-
-    // Fetch PDF from Python API
-    const response = await fetch(
-      `${process.env.PYTHON_API_URL}/download/${assignment.pythonHomeworkId}`
-    );
+    // Request PDF from Flask API (it will check cache or generate)
+    const response = await fetch(`http://localhost:5000/api/assignments/${id}/pdf`);
 
     if (!response.ok) {
-      console.error('[PDF] Python API error:', response.status);
-      return NextResponse.json({ error: 'Failed to generate PDF' }, { status: 500 });
+      console.error('[PDF] Flask API error:', response.status);
+      return NextResponse.json({ error: 'Failed to generate PDF' }, { status: response.status });
     }
 
-    // Convert to base64
-    const arrayBuffer = await response.arrayBuffer();
-    const base64 = Buffer.from(arrayBuffer).toString('base64');
+    // Get PDF as ArrayBuffer
+    const pdfBuffer = await response.arrayBuffer();
+    console.log('[PDF] Success, PDF size:', pdfBuffer.byteLength, 'bytes');
 
-    console.log('[PDF] Success, PDF size:', arrayBuffer.byteLength, 'bytes');
-
-    return NextResponse.json({ pdf: base64 });
+    // Return PDF to client
+    return new NextResponse(pdfBuffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="assignment-${id}.pdf"`,
+      },
+    });
   } catch (error) {
     console.error('[PDF] Error:', error);
     return NextResponse.json({

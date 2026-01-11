@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import {
   ClerkProvider,
   SignInButton,
-  SignUpButton,
   SignedIn,
   SignedOut,
   UserButton,
@@ -60,11 +59,6 @@ export default function RootLayout({
                     Sign In
                   </button>
                 </SignInButton>
-                <SignUpButton>
-                  <button className="h-10 bg-secondary px-4 text-sm font-semibold text-secondary-foreground transition hover:bg-primary">
-                    Create Account
-                  </button>
-                </SignUpButton>
               </SignedOut>
               <SignedIn>
                 <UserButton />

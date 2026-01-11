@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { GetStartedButton } from "@/components/GetStartedButton";
+import { RotatingText } from "@/components/RotatingText";
 
 // Keep hero highlights fixed so the tone stays intentional
 const highlightCards = [
@@ -41,7 +41,7 @@ export default function Home() {
 
             <div className="space-y-4">
               <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl">
-                An LMS that helps you keep coursework honest
+                An LMS that helps you <RotatingText />
               </h1>
               <p className="text-lg text-muted-foreground">
                 GradeMeIn makes it easier to catch issues before they become problems. You assign, students submit, and we show you what needs a closer look.
@@ -49,12 +49,7 @@ export default function Home() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <Button asChild className="h-12 bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90" variant="default">
-                <Link href="/teacher">Get started</Link>
-              </Button>
-              <Button asChild variant="outline" className="h-12 border-border bg-white px-6 text-base font-semibold text-foreground hover:bg-muted">
-                <Link href="/student">For students</Link>
-              </Button>
+              <GetStartedButton className="h-12 bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90" />
             </div>
 
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -255,19 +250,7 @@ export default function Home() {
           </div>
 
           <div className="mt-10 flex items-center gap-3">
-            <Button
-              asChild
-              className="h-12 bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90"
-            >
-              <Link href="/teacher">See how it works</Link>
-            </Button>
-            <Button
-              asChild
-              variant="outline"
-              className="h-12 border-border bg-white px-6 text-base font-semibold text-foreground hover:bg-muted"
-            >
-              <Link href="/student">Try for free</Link>
-            </Button>
+            <GetStartedButton className="h-12 bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90" />
           </div>
         </div>
       </section>
@@ -285,9 +268,7 @@ export default function Home() {
           <p className="text-xs text-muted-foreground">UC San Diego</p>
 
           <div className="mt-12 flex flex-wrap items-center justify-center gap-6">
-            <Button asChild className="h-12 bg-primary px-8 text-base font-semibold text-primary-foreground hover:bg-primary/90">
-              <Link href="/teacher">Start using GradeMeIn</Link>
-            </Button>
+            <GetStartedButton className="h-12 bg-primary px-8 text-base font-semibold text-primary-foreground hover:bg-primary/90" />
           </div>
         </div>
       </section>
