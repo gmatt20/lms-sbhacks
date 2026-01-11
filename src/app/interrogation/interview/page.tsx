@@ -12,6 +12,7 @@ export default function InterviewPage() {
   const submissionId = searchParams.get('submissionId');
 
   const [transcript, setTranscript] = useState<Array<{ role: string; content: string }>>([]);
+  const transcriptRef = useRef<Array<{ role: string; content: string }>>([]); // Ref to avoid stale closure
   const [isComplete, setIsComplete] = useState(false);
   const [client, setClient] = useState<any>(null);
   const [micState, setMicState] = useState<'open' | 'loading' | 'closed'>('closed');
