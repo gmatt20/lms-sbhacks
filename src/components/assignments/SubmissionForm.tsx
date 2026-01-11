@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { InterviewModal } from '@/components/interviews/InterviewModal';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 interface SubmissionFormProps {
@@ -13,7 +13,7 @@ export function SubmissionForm({ assignmentId, studentId }: SubmissionFormProps)
   const [submissionText, setSubmissionText] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
-  const [showInterview, setShowInterview] = useState(false);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +30,7 @@ export function SubmissionForm({ assignmentId, studentId }: SubmissionFormProps)
       setResult(data);
 
       if (data.needsInterview) {
-        setShowInterview(true);
+        router.push(`/interrogation/interview?submissionId=${data.submissionId}`);
       }
     } catch (error) {
       console.error('Submission error:', error);
@@ -60,21 +60,12 @@ export function SubmissionForm({ assignmentId, studentId }: SubmissionFormProps)
         </Button>
       </form>
 
-      {result && !showInterview && (
+      {result && !result.needsInterview && (
         <div className="mt-4 border border-border bg-card px-4 py-3 text-sm text-foreground">
           <p className="font-semibold">
             Submitted.
           </p>
         </div>
-      )}
-
-      {showInterview && (
-        <InterviewModal
-          assignmentId={assignmentId}
-          submissionId={result.submissionId}
-          submissionText={submissionText}
-          onClose={() => setShowInterview(false)}
-        />
       )}
     </>
   );
