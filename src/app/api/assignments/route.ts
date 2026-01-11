@@ -50,15 +50,15 @@ export async function POST(request: Request) {
       try {
         const errorJson = JSON.parse(errorText);
         errorDetails = errorJson.error || errorText;
-      } catch {}
+      } catch { }
 
       return NextResponse.json({
         error: 'Failed to generate assignment with Python API',
         details: errorDetails,
         status: pythonResponse.status,
         hint: pythonResponse.status === 500 ? 'Check Python API logs for details' :
-              pythonResponse.status === 400 ? 'Invalid request format' :
-              'Python API unavailable - is it running?'
+          pythonResponse.status === 400 ? 'Invalid request format' :
+            'Python API unavailable - is it running?'
       }, { status: 500 });
     }
 
@@ -77,6 +77,7 @@ export async function POST(request: Request) {
       pythonHomeworkId: pythonData.homework_id,
       mutations: pythonData.mutations,
       changes: pythonData.changes,
+      status: 'open',
       createdAt: new Date()
     };
 

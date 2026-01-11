@@ -13,7 +13,35 @@ export default function AssignmentDetail() {
   const router = useRouter();
   const [assignment, setAssignment] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (!confirm(newStatus === 'deleted' ? 'Are you sure you want to delete this assignment?' : `Are you sure you want to ${newStatus === 'open' ? 'show' : 'hide'} this assignment?`)) return;
+
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/assignments/${params.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!res.ok) throw new Error('Failed to update status');
+
+      if (newStatus === 'deleted') {
+        router.push(`/teacher/classes/${assignment.courseId}`);
+      } else {
+        setAssignment({ ...assignment, status: newStatus });
+      }
+    } catch (err) {
+      console.error('Error updating status:', err);
+      alert('Failed to update status');
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -87,7 +115,13 @@ export default function AssignmentDetail() {
             <div className="mt-3 flex items-center gap-4 text-sm text-muted-foreground">
               <span>Due: {new Date(assignment.dueDate).toLocaleDateString()}</span>
               <span>Total points: {totalPoints}</span>
+
               <span>{submissions.length} submissions</span>
+              {assignment.status === 'hidden' && (
+                <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">
+                  Hidden
+                </span>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2 sm:flex-row">
@@ -97,6 +131,22 @@ export default function AssignmentDetail() {
               className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted"
             >
               <Link href={`/teacher/assignments/${params.id}/rubric`}>Edit rubric</Link>
+            </Button>
+            <Button
+              variant="outline"
+              disabled={updating}
+              onClick={() => handleStatusChange(assignment.status === 'hidden' ? 'open' : 'hidden')}
+              className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted"
+            >
+              {assignment.status === 'hidden' ? 'Show Assignment' : 'Hide Assignment'}
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={updating}
+              onClick={() => handleStatusChange('deleted')}
+              className="h-10 px-4 text-sm font-semibold"
+            >
+              Delete Assignment
             </Button>
             <Button
               asChild

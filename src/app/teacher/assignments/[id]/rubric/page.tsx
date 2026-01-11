@@ -228,7 +228,6 @@ export default function RubricPage() {
         >
           Add criterion
         </Button>
-        {message && <span className="text-sm text-muted-foreground">{message}</span>}
       </div>
     </div>
   );

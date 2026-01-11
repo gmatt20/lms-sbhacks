@@ -455,7 +455,10 @@ def course_assignments(course_id):
     
     if request.method == "GET":
         try:
-            assignments = list(assignments_col.find({"courseId": ObjectId(course_id)}))
+            assignments = list(assignments_col.find({
+                "courseId": ObjectId(course_id),
+                "status": {"$ne": "deleted"}
+            }))
             
             for assignment in assignments:
                 assignment["_id"] = str(assignment["_id"])
@@ -481,7 +484,7 @@ def course_assignments(course_id):
                 "instructions": data.get("instructions"),
                 "dueDate": datetime.fromisoformat(data.get("dueDate").replace("Z", "+00:00")),
                 "maxScore": data.get("maxScore", 100),
-                "isPublished": data.get("isPublished", True),
+                "status": data.get("status", "open"),
                 "createdAt": datetime.now(),
                 "updatedAt": datetime.now()
             }
@@ -622,6 +625,29 @@ def get_assignment_submissions(assignment_id):
     except Exception as e:
         print(f"[SUBMISSIONS] Error: {str(e)}")
         return jsonify({"error": str(e), "submissions": []}), 500
+
+
+@app.route("/api/assignments/<assignment_id>/status", methods=["PATCH"])
+def update_assignment_status(assignment_id):
+    """Update assignment status: open, hidden, or deleted."""
+    data = request.json or {}
+    status = data.get("status")
+    if status not in ["open", "hidden", "deleted"]:
+        return jsonify({"error": "Invalid status. Must be open, hidden, or deleted"}), 400
+    try:
+        result = assignments_col.update_one(
+            {"_id": ObjectId(assignment_id)},
+            {"$set": {"status": status, "updatedAt": datetime.utcnow()}}
+        )
+        if result.matched_count == 0:
+            return jsonify({"error": "Assignment not found"}), 404
+        assignment = assignments_col.find_one({"_id": ObjectId(assignment_id)})
+        assignment["_id"] = str(assignment["_id"])
+        assignment["courseId"] = str(assignment["courseId"])
+        return jsonify({"assignment": assignment})
+    except Exception as e:
+        print(f"[STATUS] Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/assignments/rubric/generate", methods=["POST"])

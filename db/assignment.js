@@ -8,7 +8,7 @@ const assignmentSchema = new mongoose.Schema({
     instructions: { type: String, required: true },
     dueDate: { type: Date, required: true },
     maxScore: { type: Number, default: 100 },
-    isPublished: { type: Boolean, default: true },
+    status: { type: String, enum: ['open', 'hidden', 'deleted'], default: 'open' },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });
