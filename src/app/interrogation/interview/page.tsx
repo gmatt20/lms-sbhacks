@@ -12,6 +12,7 @@ export default function InterviewPage() {
   const submissionId = searchParams.get('submissionId');
 
   const [transcript, setTranscript] = useState<Array<{ role: string; content: string }>>([]);
+  const transcriptRef = useRef<Array<{ role: string; content: string }>>([]); // Ref to avoid stale closure
   const [isComplete, setIsComplete] = useState(false);
   const [client, setClient] = useState<any>(null);
   const [micState, setMicState] = useState<'open' | 'loading' | 'closed'>('closed');
@@ -478,8 +479,12 @@ End the interview once you have a reasonable sense of their understanding. Don't
     });
 
     dgClient.on(AgentEvents.ConversationText, (m: any) => {
-      setTranscript((prev) => [...prev, { role: m.role, content: m.content }]);
-      console.log('[ConversationText] Raw payload:', JSON.stringify(m));
+      const newMessage = { role: m.role, content: m.content };
+      setTranscript((prev) => {
+        const updated = [...prev, newMessage];
+        transcriptRef.current = updated; // Keep ref in sync
+        return updated;
+      });
     });
 
     // Handle function calls from the LLM (guarded parsing so we never throw)
@@ -563,11 +568,22 @@ End the interview once you have a reasonable sense of their understanding. Don't
 
   const saveTranscript = async () => {
     if (!submissionId) return;
-    await fetch(`/api/submissions/${submissionId}/transcript`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript })
-    });
+    // Use ref to get current transcript value (avoids stale closure in setTimeout)
+    const currentTranscript = transcriptRef.current;
+    console.log('[SaveTranscript] Saving', currentTranscript.length, 'messages');
+
+    try {
+      const response = await fetch(`/api/submissions/${submissionId}/transcript`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: currentTranscript })
+      });
+      const result = await response.json();
+      console.log('[SaveTranscript] Result:', result);
+    } catch (err) {
+      console.error('[SaveTranscript] Error:', err);
+    }
+
     router.push(`/interrogation/complete?submissionId=${submissionId}`);
   };
 
