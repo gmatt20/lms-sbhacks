@@ -56,9 +56,6 @@ export default function StudentDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
-      <Link href="/" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        ← Back to home
-      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold leading-tight">My Portal</h1>
