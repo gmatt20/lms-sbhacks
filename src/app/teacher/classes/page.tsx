@@ -15,24 +15,24 @@ export default function TeacherClasses() {
 
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     if (!user) {
       router.push('/');
       return;
     }
-    
+
     const role = user.publicMetadata?.role as string;
-    
+
     if (!role) {
       router.push('/onboarding');
       return;
     }
-    
+
     if (role !== 'teacher') {
       router.push('/student');
       return;
     }
-    
+
     fetch(`/api/courses?teacherId=${user.id}`)
       .then(res => res.json())
       .then(data => {
@@ -46,7 +46,7 @@ export default function TeacherClasses() {
   }, [user, isLoaded, router]);
 
   if (!isLoaded || loading) return <LoadingSpinner text="Loading your classes..." />;
-  
+
   const role = user?.publicMetadata?.role as string;
   if (!user || !role || role !== 'teacher') {
     return <div className="p-6">Redirecting...</div>;
@@ -54,14 +54,14 @@ export default function TeacherClasses() {
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
+      <Link href="/" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+        ← Back to home
+      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold leading-tight">Your Classes</h1>
           <p className="text-sm text-muted-foreground">Manage your courses and assignments, all in one place.</p>
         </div>
-        <Button asChild variant="outline" className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted">
-          <Link href="/">Back to home</Link>
-        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -84,7 +84,7 @@ export default function TeacherClasses() {
             </div>
           </Link>
         ))}
-        
+
         {courses.length === 0 && (
           <div className="col-span-full border border-dashed border-border bg-card px-6 py-12 text-center">
             <p className="text-sm text-muted-foreground">No classes yet. Sample data will appear here soon.</p>

@@ -11,34 +11,42 @@ export default function StudentDashboard() {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const [assignments, setAssignments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     if (!user) {
       router.push('/');
       return;
     }
-    
+
     const role = user.publicMetadata?.role as string;
-    
+
     if (!role) {
       router.push('/onboarding');
       return;
     }
-    
+
     if (role !== 'student') {
       router.push('/teacher');
       return;
     }
-    
-    fetch('/api/assignments')
+
+    fetch(`/api/assignments?studentId=${user.id}`)
       .then(res => res.json())
-      .then(data => setAssignments(data.assignments));
+      .then(data => {
+        setAssignments(data.assignments);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error loading assignments:', err);
+        setLoading(false);
+      });
   }, [user, isLoaded, router]);
 
-  if (!isLoaded || !user) {
-    return <LoadingSpinner />;
+  if (!isLoaded || !user || loading) {
+    return <LoadingSpinner text="Loading your assignments..." />;
   }
 
   const role = user.publicMetadata?.role as string;
@@ -48,14 +56,14 @@ export default function StudentDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
+      <Link href="/" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+        ← Back to home
+      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold leading-tight">My Portal</h1>
           <p className="text-sm text-muted-foreground">See your coursework, submit on time, and stay calm.</p>
         </div>
-        <Button asChild variant="outline" className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted">
-          <Link href="/">Back to home</Link>
-        </Button>
       </div>
 
       <div className="space-y-3">
@@ -63,7 +71,10 @@ export default function StudentDashboard() {
           <Link
             key={assignment._id}
             href={`/student/${assignment._id}`}
-            className="flex items-center justify-between border border-border bg-white px-4 py-3 transition hover:bg-muted"
+            className={`flex items-center justify-between border px-4 py-3 transition ${assignment.isSubmitted
+                ? 'border-border/50 bg-muted/50 opacity-60 hover:bg-muted'
+                : 'border-border bg-white hover:bg-muted'
+              }`}
           >
             <div>
               <h3 className="text-lg font-semibold">{assignment.title}</h3>
@@ -71,7 +82,9 @@ export default function StudentDashboard() {
                 Assigned: {new Date(assignment.createdAt).toLocaleDateString()}
               </p>
             </div>
-            <span className="text-xs font-semibold text-secondary">Open</span>
+            <span className={`text-xs font-semibold ${assignment.isSubmitted ? 'text-muted-foreground' : 'text-secondary'}`}>
+              {assignment.isSubmitted ? 'Submitted' : 'Open'}
+            </span>
           </Link>
         ))}
         {assignments.length === 0 && (

@@ -12,8 +12,14 @@ export async function GET(
     const response = await fetch(`http://localhost:5000/api/assignments/${id}/pdf`);
 
     if (!response.ok) {
-      console.error('[PDF] Flask API error:', response.status);
-      return NextResponse.json({ error: 'Failed to generate PDF' }, { status: response.status });
+      const errorText = await response.text();
+      console.error('[PDF] Flask API error:', response.status, errorText);
+      try {
+        const errorJson = JSON.parse(errorText);
+        return NextResponse.json(errorJson, { status: response.status });
+      } catch {
+        return NextResponse.json({ error: `Failed to generate PDF: ${errorText}` }, { status: response.status });
+      }
     }
 
     // Get PDF as ArrayBuffer

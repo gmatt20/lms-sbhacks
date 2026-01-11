@@ -48,7 +48,7 @@ export default function RubricPage() {
       .then((data) => {
         setAssignment(data.assignment);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
 
     fetch(`/api/assignments/${assignmentId}/rubric`)
@@ -57,7 +57,7 @@ export default function RubricPage() {
         setRubric(data.rubric || []);
         setVisibleToStudents(!!data.visibleToStudents);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [isLoaded, user, router, assignmentId]);
 
   const totalPoints = useMemo(
@@ -131,6 +131,9 @@ export default function RubricPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-6 text-foreground">
+      <Link href={`/teacher/assignments/${assignmentId}`} className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+        ← Back to assignment
+      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Rubric</p>
@@ -138,9 +141,6 @@ export default function RubricPage() {
           <p className="text-sm text-muted-foreground">Total points: {totalPoints}</p>
         </div>
         <div className="flex gap-2">
-          <Button asChild variant="outline" className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted">
-            <Link href={`/teacher/assignments/${assignmentId}`}>Back to assignment</Link>
-          </Button>
           <Button
             onClick={handleGenerate}
             disabled={generating}

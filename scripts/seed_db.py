@@ -17,6 +17,8 @@ load_dotenv()
 # Add parent directory to path to import from api
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'api'))
 
+
+
 MONGO_URI = os.environ.get("MONGO_URI", "mongodb://localhost:27017")
 
 def seed_database():
@@ -124,28 +126,6 @@ ASSIGNMENT REQUIREMENTS:
    - How do these literary portrayals of the American Dream resonate today?
    - What can we learn from these authors about ambition, success, identity, and belonging in America?
 
-FORMATTING GUIDELINES:
-- 5-7 pages, double-spaced
-- Times New Roman, 12-point font
-- 1-inch margins on all sides
-- MLA format for citations and Works Cited page
-- Include your name, date, and class period in the header
-
-EVALUATION CRITERIA:
-Your essay will be evaluated based on:
-- Strength and originality of thesis (20%)
-- Quality of textual analysis and use of evidence (30%)
-- Integration of scholarly sources (15%)
-- Organization and coherence (15%)
-- Writing quality, grammar, and mechanics (10%)
-- Proper MLA citation format (10%)
-
-DUE DATE: One week from today
-SUBMISSION: Upload your essay as a PDF or Word document
-
-ACADEMIC INTEGRITY:
-This assignment must be your own original work. Plagiarism, including using AI-generated content without proper attribution, will result in a zero for the assignment and possible disciplinary action. If you're unsure about proper citation or need help developing your ideas, please come to office hours or visit the Writing Center.
-
 Remember: The goal is not just to show what these texts say about the American Dream, but to develop your own sophisticated argument about what they reveal about American identity, aspiration, and the gap between promise and reality.""",
             "dueDate": now + timedelta(days=7),
             "maxScore": 100,
@@ -221,21 +201,7 @@ REQUIRED ELEMENTS:
 - Use at least ONE scholarly source for historical/critical context
 - Cite sources in MLA format
 
-FORMATTING:
-- 3-4 pages (excluding the poem text), double-spaced
-- Times New Roman, 12-point font
-- Works Cited page
-
-GRADING CRITERIA:
-- Depth and sophistication of analysis (40%)
-- Understanding of formal poetic elements (25%)
-- Quality of textual evidence and close reading (20%)
-- Organization and writing quality (10%)
-- Proper citation and formatting (5%)
-
-DUE DATE: Two weeks from today
-
-NOTE: This is an exercise in YOUR interpretation. While you should consult one scholarly source for context, the analysis itself should reflect your own careful reading of the poem. Avoid relying on SparkNotes, LitCharts, or AI-generated summaries—they won't help you develop the close reading skills this assignment is designed to teach.""",
+- Cite sources in MLA format""",
             "dueDate": now + timedelta(days=14),
             "maxScore": 100,
             "isPublished": True,
@@ -323,48 +289,12 @@ ASSIGNMENT REQUIREMENTS:
    - Properly cite all sources, including page numbers for direct quotes
    - Include stable URLs for online sources
 
-FORMATTING REQUIREMENTS:
-- 6-8 pages, double-spaced (title page and bibliography do not count toward page length)
-- Times New Roman, 12-point font
-- 1-inch margins
-- Title page with your name, date, class period, and essay title
-- Page numbers
-- Chicago/Turabian citation style throughout
-
-EVALUATION CRITERIA:
-Your essay will be evaluated on:
-- Strength and clarity of historical argument (25%)
-- Quality and diversity of research sources (20%)
-- Depth of historical analysis (20%)
-- Effective use of evidence (15%)
-- Understanding of Cold War context and significance (10%)
-- Organization and writing quality (5%)
-- Proper Chicago/Turabian citation (5%)
-
 RESEARCH TIPS:
 - Start with your textbook for general context
 - Use library databases (JSTOR, Academic Search Complete) for scholarly articles
 - Check the National Archives, Presidential Libraries, and university digital collections for primary sources
 - Consult your librarian for research assistance
 - Keep careful notes and track all source information as you research
-
-ACADEMIC INTEGRITY:
-This must be your own original work based on your own research. Plagiarism includes:
-- Copying from sources without quotation marks and citations
-- Paraphrasing without attribution
-- Using AI tools to generate any part of your essay
-- Submitting work written by someone else
-
-Violations will result in a zero and referral for disciplinary action.
-
-DUE DATE: Three weeks from today
-SUBMISSION: Upload final essay as PDF
-
-MILESTONE DEADLINES:
-- Topic selection: End of Week 1
-- Annotated bibliography (5 sources): End of Week 2
-- Rough draft (optional, for feedback): End of Week 2.5
-- Final essay: End of Week 3
 
 Remember: This assignment is about developing your skills as a historian—asking good questions, finding evidence, constructing arguments, and understanding how the past shapes the present. Take time to think deeply about your topic and what it reveals about this crucial period in world history.""",
             "dueDate": now + timedelta(days=21),
@@ -464,35 +394,12 @@ While the documents are central to your essay, you should also incorporate relev
 - Important events (Bandung Conference, wars of independence, etc.)
 - Relevant historical context (WWII's impact, Cold War influence, etc.)
 
-FORMATTING:
-- 4-6 pages, double-spaced
-- Times New Roman, 12-point font
-- No outside research required (use only the provided documents and your class knowledge)
-- Cite documents parenthetically: (Doc. 1), (Doc. 3), etc.
-
-EVALUATION RUBRIC:
-- Thesis (0-1 point): Clear, historically defensible thesis
-- Contextualization (0-1 point): Broader historical context explained
-- Evidence (0-3 points): Use of at least 6 documents to support argument
-- Analysis and Reasoning (0-2 points): Explanation of how evidence supports thesis
-- Complexity (0-1 point): Sophisticated argument that considers multiple perspectives
-
-Total: 8 points (converted to 100-point scale)
-
 PRACTICE PREPARATION:
 Before the assessment:
 - Review your notes on decolonization
 - Practice analyzing primary sources for point of view, purpose, and audience
 - Review DBQ writing strategies
 - Practice organizing arguments thematically
-
-TIME LIMIT: 100 minutes in class
-- Reading period: 15 minutes
-- Writing period: 85 minutes
-
-This DBQ will be completed IN CLASS. You may bring one 3x5 notecard with key dates/names (no full sentences).
-
-TEST DATE: Two weeks from today
 
 STUDY RECOMMENDATIONS:
 - Review textbook chapters on decolonization (Chapters 23-24)
@@ -534,8 +441,8 @@ Remember: The goal is not just to summarize the documents, but to use them as ev
             "needsInterview": False,
             "interviewCompleted": False,
             "status": "submitted",
-            "score": None,
-            "feedback": None,
+            "score": 92,
+            "feedback": "Excellent work. Your thesis is strong and you've integrated the rubric's requirements for scholarly sources effective. Great use of 'The Great Gatsby' to illustrate your points.",
             "createdAt": now - timedelta(hours=12),
             "updatedAt": now - timedelta(hours=12),
         },
@@ -550,26 +457,26 @@ Remember: The goal is not just to summarize the documents, but to use them as ev
             "suspicionScore": 3,
             "indicatorsFound": [
                 {
-                    "type": "advanced_vocabulary",
-                    "evidence": "multifaceted representation, pronounced evolution, aspirational narrative",
+                    "type": "atomic_replacement",
+                    "evidence": "multifaceted representation",
                     "location": "opening sentence"
                 },
                 {
-                    "type": "sophisticated_phrasing",
-                    "evidence": "foregrounding the psychological devastation wrought upon",
+                    "type": "secret_injection",
+                    "evidence": "psychological devastation wrought upon",
                     "location": "paragraph 1"
                 },
                 {
-                    "type": "unusual_terminology",
-                    "evidence": "insidious ideology, capitalist mythology",
+                    "type": "secret_injection",
+                    "evidence": "capitalist mythology",
                     "location": "conclusion"
                 }
             ],
             "needsInterview": True,
             "interviewCompleted": False,
             "status": "flagged",
-            "score": None,
-            "feedback": None,
+            "score": 88,
+            "feedback": "This is a very sophisticated analysis with high-level vocabulary. However, please see me to discuss the sources used, as the voice differs significantly from your in-class writing.",
             "createdAt": now - timedelta(hours=8),
             "updatedAt": now - timedelta(hours=8),
         },
@@ -592,7 +499,109 @@ Remember: The goal is not just to summarize the documents, but to use them as ev
             "updatedAt": now - timedelta(hours=1),
         },
     ]
+
+    
     db.submissions.insert_many(submissions)
+    
+    # Pre-generate audit info (mutations) using hardcoded values for stability
+    print("Seeding audit info (mutations)...")
+    db.homeworks.delete_many({})
+    
+    # Define simple static mutations for each assignment
+    # This avoids calling the external AI API during seeding
+    
+    def create_seed_homework(assignment, mutations_data):
+        visible_text = assignment["instructions"]
+        mutated_text = visible_text
+        mutations = []
+        changes = []
+        
+        for m in mutations_data:
+            orig = m["original"]
+            new = m["new"]
+            m_type = m["type"]
+            
+            if orig in mutated_text:
+                # Apply mutation
+                mutated_text = mutated_text.replace(orig, new)
+                
+                # Record it
+                mutations.append({
+                    "original_text": orig,
+                    "mutated_text": new,
+                    "type": m_type,
+                    "index": mutated_text.find(new), # Approximate index
+                    "length": len(new)
+                })
+                changes.append({
+                    "original": orig,
+                    "mutated": new,
+                    "type": m_type
+                })
+        
+        return {
+            "assignment_id": str(assignment["_id"]),
+            "teacher_id": assignment["professorId"],
+            "course_id": str(assignment["courseId"]),
+            "original_prompt": visible_text,
+            "mutated_prompt": mutated_text,
+            "mutations": mutations,
+            "changes": changes,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now()
+        }
+
+    # Assignment 1: American Dream
+    h1 = create_seed_homework(assignments[0], [
+        {"type": "atomic_replacement", "original": "analytical essay", "new": "multifaceted analytical essay"},
+        {"type": "secret_injection", "original": "critical thinking", "new": "rigorous critical thinking"},
+        {"type": "atomic_replacement", "original": "synthesize ideas", "new": "synthesize complex ideas"},
+        {"type": "atomic_replacement", "original": "Choose at least 3", "new": "Select at least 3"},
+        {"type": "atomic_replacement", "original": "THESIS STATEMENT", "new": "THESIS STATEMENT CONSTRUCTION"},
+        {"type": "secret_injection", "original": "specific claim", "new": "specific, defensible claim"},
+        {"type": "atomic_replacement", "original": "close readings", "new": "nuanced close readings"},
+        {"type": "secret_injection", "original": "scholarly sources", "new": "peer-reviewed scholarly sources"}
+    ])
+    db.homeworks.insert_one(h1)
+
+    # Assignment 2: Poetry
+    h2 = create_seed_homework(assignments[1], [
+        {"type": "atomic_replacement", "original": "close reading", "new": "detailed close reading"},
+        {"type": "atomic_replacement", "original": "poetic analysis", "new": "formal poetic analysis"},
+        {"type": "secret_injection", "original": "modernist period", "new": "high modernist period"},
+        {"type": "atomic_replacement", "original": "cultural significance", "new": "broader cultural significance"},
+        {"type": "atomic_replacement", "original": "Choose ONE", "new": "Select ONE"},
+        {"type": "secret_injection", "original": "technical elements", "new": "specific technical elements"},
+        {"type": "atomic_replacement", "original": "interpretive thesis", "new": "nuanced interpretive thesis"},
+        {"type": "secret_injection", "original": "scholarly source", "new": "academic scholarly source"}
+    ])
+    db.homeworks.insert_one(h2)
+
+    # Assignment 3: Cold War
+    h3 = create_seed_homework(assignments[2], [
+        {"type": "atomic_replacement", "original": "Research essay", "new": "In-depth research essay"},
+        {"type": "atomic_replacement", "original": "historical argument", "new": "persuasive historical argument"},
+        {"type": "secret_injection", "original": "pivotal period", "new": "transformative period"},
+        {"type": "atomic_replacement", "original": "credible sources", "new": "authoritative credible sources"},
+        {"type": "secret_injection", "original": "primary sources", "new": "primary historical sources"},
+        {"type": "atomic_replacement", "original": "historical context", "new": "broad historical context"},
+        {"type": "atomic_replacement", "original": "multiple perspectives", "new": "diverse perspectives"},
+        {"type": "secret_injection", "original": "scholarly books", "new": "academic scholarly books"}
+    ])
+    db.homeworks.insert_one(h3)
+
+    # Assignment 4: DBQ
+    h4 = create_seed_homework(assignments[3], [
+        {"type": "atomic_replacement", "original": "analyze primary source documents", "new": "analyze key primary source documents"},
+        {"type": "secret_injection", "original": "historical argument", "new": "nuanced historical argument"},
+        {"type": "atomic_replacement", "original": "post-World War II era", "new": "post-WWII global era"},
+        {"type": "secret_injection", "original": "political landscape", "new": "geopolitical landscape"},
+        {"type": "atomic_replacement", "original": "essential to understanding", "new": "crucial to understanding"},
+        {"type": "atomic_replacement", "original": "Political speeches", "new": "Major political speeches"},
+        {"type": "secret_injection", "original": "clear, sophisticated thesis", "new": "clear, sophisticated, and argumentative thesis"},
+        {"type": "atomic_replacement", "original": "outside historical knowledge", "new": "relevant outside historical knowledge"}
+    ])
+    db.homeworks.insert_one(h4)
     
     print(f"\n✓ Seed complete!")
     print(f"  - 2 high school courses created (American Literature, Modern World History)")
@@ -606,7 +615,7 @@ Remember: The goal is not just to summarize the documents, but to use them as ev
     print(f"  - Modern World History:")
     print(f"    * Assignment 1 (Cold War research): No submissions yet")
     print(f"    * Assignment 2 (Decolonization DBQ): No submissions yet")
-    print(f"\n  - Student 2's essay is FLAGGED for review (advanced language)")
+    print(f"\n  - Student 2's essay is FLAGGED for review (3 invisible markers found)")
     print(f"  - Student 3's essay is graded (72/100)")
     print(f"  - Student 1's essay is pending review")
     print(f"\nYou can now sign in with your Clerk accounts:")

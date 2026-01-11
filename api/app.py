@@ -84,6 +84,18 @@ def build_secret_replacement_pdf(visible_text: str, secret_text: str, output_pat
     Generate a PDF with visible text but with secret text replacement via marked content.
     The visible_text is what appears on screen, secret_text is what copy/paste/accessibility sees.
     """
+    # Normalize text to avoid ReportLab encoding issues with standard fonts
+    replacements = {
+        '\u201c': '"', '\u201d': '"',  # Smart quotes
+        '\u2018': "'", '\u2019': "'",  # Smart single quotes
+        '\u2013': '-', '\u2014': '-'   # Dashes
+    }
+    for k, v in replacements.items():
+        if visible_text:
+            visible_text = visible_text.replace(k, v)
+        if secret_text:
+            secret_text = secret_text.replace(k, v)
+
     page_size = letter
     font_size = 12
     margin = 50
@@ -99,44 +111,52 @@ def build_secret_replacement_pdf(visible_text: str, secret_text: str, output_pat
     
     c.setFont(font_name, font_size)
     
-    # Clean and split visible text into words
-    clean_text = " ".join(visible_text.split())
-    words = clean_text.split()
-    
-    # Layout: wrap text to fit page width
+    # Layout: wrap text to fit page width, respecting newlines
     lines = []
-    current_line = []
-    current_width = 0
+    
+    # Normalize newlines
+    paragraphs = visible_text.replace('\r\n', '\n').split('\n')
+    
     max_width = page_size[0] - 2 * margin
     space_w = c.stringWidth(" ", font_name, font_size)
     
-    for word in words:
-        w_w = c.stringWidth(word, font_name, font_size)
-        if current_width + w_w > max_width and current_line:
+    for p_idx, paragraph in enumerate(paragraphs):
+        # If paragraph is empty, it's a blank line
+        if not paragraph.strip():
+            lines.append([])
+            continue
+            
+        words = paragraph.split()
+        current_line = []
+        current_width = 0
+        
+        for word in words:
+            w_w = c.stringWidth(word, font_name, font_size)
+            if current_width + w_w > max_width and current_line:
+                lines.append(current_line)
+                current_line = [word]
+                current_width = w_w + space_w
+            else:
+                current_line.append(word)
+                current_width += w_w + space_w
+        if current_line:
             lines.append(current_line)
-            current_line = [word]
-            current_width = w_w + space_w
-        else:
-            current_line.append(word)
-            current_width += w_w + space_w
-    if current_line:
-        lines.append(current_line)
+
+    # Filter for non-empty lines to distribute secret text
+    non_empty_line_indices = [i for i, l in enumerate(lines) if l]
+    num_content_lines = len(non_empty_line_indices)
     
-    c.saveState()
-    
-    num_lines = len(lines)
-    if num_lines == 0:
-        c.restoreState()
+    if num_content_lines == 0:
         c.save()
         if output_path is None:
             output_buffer.seek(0)
             return output_buffer.getvalue()
         return True
     
-    # Distribute secret_text across lines respecting word boundaries
+    # Distribute secret_text across NON-EMPTY lines
     target_words = secret_text.split()
     total_len = len(secret_text)
-    ideal_len = total_len / num_lines if num_lines > 0 else 0
+    ideal_len = total_len / num_content_lines if num_content_lines > 0 else 0
     
     chunks = []
     current_chunk_words = []
@@ -144,12 +164,11 @@ def build_secret_replacement_pdf(visible_text: str, secret_text: str, output_pat
     word_idx = 0
     n_words = len(target_words)
     
-    for i in range(num_lines - 1):
+    for i in range(num_content_lines - 1):
         if word_idx >= n_words:
             chunks.append("")
             continue
         
-        # Fill current line
         while word_idx < n_words:
             word = target_words[word_idx]
             w_len = len(word)
@@ -169,18 +188,36 @@ def build_secret_replacement_pdf(visible_text: str, secret_text: str, output_pat
         current_chunk_words = []
         current_len = 0
     
-    # Last line gets the rest
+    # Last content line gets the rest
     if word_idx < n_words:
         chunks.append(" ".join(target_words[word_idx:]))
     else:
         chunks.append("")
     
-    # Draw lines with ActualText marked content
+    # Map chunks back to line indices
+    line_to_chunk = {line_idx: chunk for line_idx, chunk in zip(non_empty_line_indices, chunks)}
+    
+    # Draw lines
     y = page_size[1] - margin
     for i, line_words in enumerate(lines):
+        # Check if we need new page
+        if y < margin:
+            c.showPage()
+            c.setFont(font_name, font_size)
+            y = page_size[1] - margin
+
+        if not line_words:
+            # Empty line, just spacing
+            y -= line_height
+            continue
+            
         x = margin
         line_str = " ".join(line_words)
-        chunk = chunks[i] if i < len(chunks) and chunks[i] else " "
+        
+        # Get corresponding secret chunk
+        chunk = line_to_chunk.get(i, "")
+        if not chunk:
+            chunk = " "
         
         # Escape special PDF characters
         esc_chunk = chunk.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
@@ -192,7 +229,6 @@ def build_secret_replacement_pdf(visible_text: str, secret_text: str, output_pat
         
         y -= line_height
     
-    c.restoreState()
     c.save()
     
     if output_path is None:
@@ -526,17 +562,25 @@ def get_assignment_pdf(assignment_id):
                 download_name=f"{assignment.get('title', 'assignment')}.pdf"
             )
         
-        # Generate new PDF with mutations
-        print(f"[PDF] Generating new PDF for assignment {assignment_id}")
         visible_text = assignment.get("instructions", "")
-        
-        # Use Gemini to create mutated version
-        from gemini import mutate_prompt
-        mutation_result = mutate_prompt(prompt_text=visible_text)
-        mutated_text = mutation_result["mutated"]
-        mutations = mutation_result["mutations"]
-        changes = mutation_result["changes"]
-        
+
+        # If we have homework metadata but no PDF, use the metadata to regenerate PDF
+        if homework:
+            print(f"[PDF] Regenerating PDF from existing audit info for {assignment_id}")
+            mutated_text = homework["mutated_prompt"]
+            mutations = homework.get("mutations", [])
+            changes = homework.get("changes", [])
+        else:
+            # Generate new PDF with mutations
+            print(f"[PDF] Generating new PDF for assignment {assignment_id}")
+            
+            # Use Gemini to create mutated version
+            from gemini import mutate_prompt
+            mutation_result = mutate_prompt(prompt_text=visible_text)
+            mutated_text = mutation_result["mutated"]
+            mutations = mutation_result["mutations"]
+            changes = mutation_result["changes"]
+
         # Generate PDF
         pdf_bytes = build_secret_replacement_pdf(
             visible_text=visible_text,
@@ -550,14 +594,10 @@ def get_assignment_pdf(assignment_id):
         
         # Store mutation metadata
         if homework:
-            # Update existing
+            # Update existing (just the PDF path and timestamp)
             homeworks_col.update_one(
                 {"assignment_id": assignment_id},
                 {"$set": {
-                    "original_prompt": visible_text,
-                    "mutated_prompt": mutated_text,
-                    "mutations": mutations,
-                    "changes": changes,
                     "pdf_path": pdf_path,
                     "updated_at": datetime.now()
                 }}
@@ -603,6 +643,12 @@ def get_assignment(assignment_id):
         
         assignment["_id"] = str(assignment["_id"])
         assignment["courseId"] = str(assignment["courseId"])
+
+        # Attach audit info if available
+        homework = homeworks_col.find_one({"assignment_id": assignment_id})
+        if homework:
+            assignment["mutations"] = homework.get("mutations", [])
+            assignment["mutated_prompt"] = homework.get("mutated_prompt", "")
         
         return jsonify({"assignment": assignment})
     except Exception as e:

@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useUser } from '@clerk/nextjs';
 import { PDFViewer } from '@/components/assignments/PDFViewer';
 import { SubmissionForm } from '@/components/assignments/SubmissionForm';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
 
 export default function AssignmentView() {
   const params = useParams();
@@ -26,9 +28,26 @@ export default function AssignmentView() {
 
     // Fetch PDF
     fetch(`/api/assignments/${params.id}/pdf?studentId=${user.id}`)
-      .then(res => res.json())
-      .then(data => {
-        setPdfBase64(data.pdf);
+      .then(async res => {
+        if (!res.ok) {
+          const text = await res.text();
+          console.error('PDF loading failed:', res.status, text);
+          throw new Error(`Failed to load PDF: ${res.status}`);
+        }
+        const blob = await res.blob();
+        return new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            // Get base64 content after the comma
+            const base64 = (reader.result as string).split(',')[1];
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      })
+      .then(base64 => {
+        setPdfBase64(base64);
         setLoading(false);
       })
       .catch(err => {
@@ -37,11 +56,14 @@ export default function AssignmentView() {
       });
   }, [params.id, user]);
 
-  if (loading) return <div className="p-6">Loading, one moment...</div>;
+  if (loading) return <LoadingSpinner text="Loading assignment..." />;
   if (!assignment) return <div className="p-6">Assignment not found, please check the link.</div>;
 
   return (
     <div className="mx-auto max-w-5xl p-6">
+      <Link href="/student" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+        ← Back to dashboard
+      </Link>
       <h1 className="mb-4 text-2xl font-bold">{assignment.title}</h1>
 
       <div className="mb-6">

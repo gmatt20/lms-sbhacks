@@ -10,6 +10,7 @@ This project helps educators identify AI-assisted work by embedding imperceptibl
   - A visible layer the student reads normally
   - A hidden layer carrying the mutated prompt markers
 - **Submission Analysis:** When students submit, the backend extracts text and checks for the presence of the hidden markers. It returns a score and evidence (snippets) showing what was found.
+- **Rubric Generation:** The system analyzes assignment instructions to automatically generate a structured grading rubric. Teachers can then edit, save, and use this rubric for consistent grading.
 
 ## Why This Works
 - **Concrete signals:** We look for specific markers (names, numbers, dates, rare phrases) that are extremely unlikely to appear by chance.
@@ -62,12 +63,14 @@ This project helps educators identify AI-assisted work by embedding imperceptibl
 - **Markers are subtle:** Prefer atomic replacements first; fall back to injections only when replacements are insufficient.
 - **Context-first:** Injections are chosen based on the assignment topic (history, science, literature, geography, etc.).
 - **Determinism:** Model seed `2262` keeps mutations stable across runs for the same prompt.
+- **Assignment Lifecycle:** Assignments use a `status` field (`open`, `hidden`, `deleted`) instead of a boolean `isPublished`. This supports "soft delete" and visibility toggling without data loss.
+- **UI Consistency:** Navigation uses standardized "← Back to [Page]" links positioned above the page header.
 
 ## Limitations & Roadmap
 - **PDF extraction differences:** Some LLMs ignore certain PDF layers; we aim for universal markers that survive copy/paste and upload.
 - **Universal embedding (future):** Integrate Private Use Area (PUA) font encoding to ensure all extractors see the hidden layer consistently.
 - **Batch reporting:** Add endpoints for per-homework dashboards and submission analytics.
-- **UI:** Build a lightweight teacher dashboard for generating prompts and reviewing flagged submissions.
+- **UI:** Build a lightweight teacher dashboard for generating prompts and reviewing flagged submissions. (Implemented: Teacher/Student portals, Rubric editor, Assignment management)
 
 ## Repository Map
 - **Backend:** `api/app.py` (Flask), `api/gemini.py` (Gemini integration)

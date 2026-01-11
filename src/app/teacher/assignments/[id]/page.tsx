@@ -16,6 +16,7 @@ export default function AssignmentDetail() {
 
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [showAudit, setShowAudit] = useState(false);
 
   const handleStatusChange = async (newStatus: string) => {
     if (!confirm(newStatus === 'deleted' ? 'Are you sure you want to delete this assignment?' : `Are you sure you want to ${newStatus === 'open' ? 'show' : 'hide'} this assignment?`)) return;
@@ -232,6 +233,51 @@ export default function AssignmentDetail() {
         <h3 className="mb-3 font-semibold">Assignment Instructions</h3>
         <p className="whitespace-pre-wrap text-sm text-muted-foreground">{assignment.instructions}</p>
       </div>
+
+      <div className="mt-8 flex justify-end">
+        <button
+          onClick={() => setShowAudit(!showAudit)}
+          className="text-xs text-muted-foreground hover:text-foreground underline opacity-50 hovered:opacity-100"
+        >
+          {showAudit ? 'Hide Audit Info' : 'Show Audit Info'}
+        </button>
+      </div>
+
+      {showAudit && assignment.mutations && (
+        <div className="mt-4 border border-yellow-200 bg-yellow-50 p-4">
+          <h3 className="mb-2 font-semibold text-yellow-900">🔒 Audit: Active Integrity Markers</h3>
+          <p className="mb-4 text-xs text-yellow-800">
+            These are the secret transformations currently active for this assignment.
+            This information is for auditing purposes and must NEVER be shared with students.
+          </p>
+
+          <div className="space-y-4">
+            {assignment.mutations.map((mutation: any, idx: number) => (
+              <div key={idx} className="border-l-2 border-yellow-400 pl-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-bold uppercase tracking-wider text-yellow-700">
+                    {mutation.type.replace(/_/g, ' ')}
+                  </span>
+                </div>
+
+                <div className="grid gap-2 text-sm">
+                  <div>
+                    <span className="text-xs text-muted-foreground">Original:</span>
+                    <p className="font-mono text-xs bg-white/50 p-1">{mutation.original_text}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Mutated:</span>
+                    <p className="font-mono text-xs bg-white/50 p-1">{mutation.mutated_text}</p>
+                  </div>
+                  {mutation.detail && (
+                    <p className="text-xs italic text-yellow-800 mt-1">{mutation.detail}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

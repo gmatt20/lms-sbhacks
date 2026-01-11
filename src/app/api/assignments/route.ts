@@ -2,12 +2,32 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const studentId = searchParams.get('studentId');
   const { db } = await connectToDatabase();
+
   const assignments = await db.collection('assignments')
     .find({})
     .sort({ createdAt: -1 })
     .toArray();
+
+  if (studentId) {
+    // If studentId provided, check which assignments they've submitted
+    const submissions = await db.collection('submissions')
+      .find({ studentId })
+      .toArray();
+
+    const submittedAssignmentIds = new Set(submissions.map((s: any) => s.assignmentId.toString()));
+
+    const assignmentsWithStatus = assignments.map((assignment: any) => ({
+      ...assignment,
+      isSubmitted: submittedAssignmentIds.has(assignment._id.toString())
+    }));
+
+    return NextResponse.json({ assignments: assignmentsWithStatus });
+  }
+
   return NextResponse.json({ assignments });
 }
 

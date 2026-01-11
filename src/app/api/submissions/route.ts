@@ -14,7 +14,7 @@ export async function POST(request: Request) {
 
     const { db } = await connectToDatabase();
 
-    // Get assignment to find Python homework ID
+    // Get assignment and associated homework record
     const assignment = await db.collection('assignments').findOne({
       _id: new ObjectId(assignmentId)
     });
@@ -24,11 +24,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Assignment not found' }, { status: 404 });
     }
 
-    console.log('[SUBMISSIONS] Found assignment, calling Python API for analysis');
+    // Look up the Python homework info (mutations)
+    const homework = await db.collection('homeworks').findOne({
+      assignment_id: assignmentId
+    });
+
+    if (!homework) {
+      console.error('[SUBMISSIONS] Homework/Audit info not found for assignment:', assignmentId);
+      return NextResponse.json({ error: 'Audit info not found for this assignment' }, { status: 404 });
+    }
+
+    console.log('[SUBMISSIONS] Found assignment and homework, calling Python API');
 
     // Call Python API for analysis
     const formData = new FormData();
-    formData.append('homework_id', assignment.pythonHomeworkId);
+    formData.append('homework_id', homework._id.toString());
     formData.append('student_id', studentId);
     formData.append('response_text', submissionText);
 

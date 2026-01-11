@@ -79,15 +79,15 @@ export default function NewAssignmentPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6 text-foreground">
+      <Link href={`/teacher/classes/${courseId}`} className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+        ← Back to class
+      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">New assignment</p>
           <h1 className="text-3xl font-semibold leading-tight">Create assignment</h1>
           <p className="text-sm text-muted-foreground">Course ID: {courseId}</p>
         </div>
-        <Button asChild variant="outline" className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted">
-          <Link href={`/teacher/classes/${courseId}`}>Back to class</Link>
-        </Button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 border border-border bg-white p-5 shadow-sm">

@@ -17,26 +17,26 @@ export default function ClassDetail() {
 
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     if (!user) {
       router.push('/');
       return;
     }
-    
+
     const role = user.publicMetadata?.role as string;
-    
+
     if (!role) {
       router.push('/onboarding');
       return;
     }
-    
+
     if (role !== 'teacher') {
       router.push('/student');
       return;
     }
-    
+
     if (!params.id) return;
-    
+
     Promise.all([
       fetch(`/api/courses/${params.id}`).then(r => r.json()),
       fetch(`/api/courses/${params.id}/assignments`).then(r => r.json()),
@@ -52,7 +52,7 @@ export default function ClassDetail() {
 
   if (loading) return <LoadingSpinner text="Loading class details..." />;
   if (!course) return <div className="p-6">Class not found.</div>;
-  
+
   const role = user?.publicMetadata?.role as string;
   if (!user || !role || role !== 'teacher') {
     return <div className="p-6">Redirecting...</div>;
@@ -60,6 +60,9 @@ export default function ClassDetail() {
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
+      <Link href="/teacher/classes" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+        ← Back to classes
+      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <div className="mb-2 flex items-center gap-3">
@@ -70,9 +73,6 @@ export default function ClassDetail() {
           </div>
           <p className="text-sm text-muted-foreground">{course.description}</p>
         </div>
-        <Button asChild variant="outline" className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted">
-          <Link href="/teacher/classes">Back to classes</Link>
-        </Button>
       </div>
 
       <div className="mb-6 border border-border bg-white px-5 py-4 shadow-sm">

@@ -12,40 +12,43 @@ export default function TeacherDashboard() {
   const router = useRouter();
   const [courses, setCourses] = useState([]);
   const [stats, setStats] = useState({ totalAssignments: 0, totalSubmissions: 0, pendingReviews: 0 });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     if (!user) {
       router.push('/');
       return;
     }
-    
+
     const role = user.publicMetadata?.role as string;
-    
+
     if (!role) {
       router.push('/onboarding');
       return;
     }
-    
+
     if (role !== 'teacher') {
       router.push('/student');
       return;
     }
-    
+
     fetch(`/api/courses?teacherId=${user.id}`)
       .then(res => res.json())
       .then(data => {
         setCourses(data.courses || []);
         setStats(data.stats || stats);
+        setLoading(false);
       })
       .catch(err => {
         console.error('Error fetching courses:', err);
+        setLoading(false);
       });
   }, [user, isLoaded, router]);
 
-  if (!isLoaded || !user) {
-    return <LoadingSpinner />;
+  if (!isLoaded || !user || loading) {
+    return <LoadingSpinner text="Loading dashboard..." />;
   }
 
   const role = user.publicMetadata?.role as string;
@@ -55,14 +58,14 @@ export default function TeacherDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
+      <Link href="/" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+        ← Back to home
+      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold leading-tight">My Portal</h1>
           <p className="text-sm text-muted-foreground">Manage your courses, assignments, and keep track of student work.</p>
         </div>
-        <Button asChild variant="outline" className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted">
-          <Link href="/">Back to home</Link>
-        </Button>
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
@@ -107,7 +110,7 @@ export default function TeacherDashboard() {
               <span className="text-xs font-semibold text-secondary">{course.assignmentCount || 0} assignments</span>
             </Link>
           ))}
-          
+
           {courses.length === 0 && (
             <div className="border border-dashed border-border bg-card px-4 py-6 text-sm text-muted-foreground">
               No classes found. Contact your administrator to get started.
