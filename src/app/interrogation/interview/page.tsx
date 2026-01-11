@@ -28,54 +28,55 @@ export default function InterviewPage() {
   const audioQueueRef = useRef<ArrayBuffer[]>([]);
   const isPlayingRef = useRef(false);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const transcriptEndRef = useRef<HTMLDivElement | null>(null);
 
   // Create WAV header for linear16 PCM audio at 24kHz
   const createWavHeader = (dataLength: number, sampleRate: number = 24000): Uint8Array => {
     const header = new Uint8Array(44);
-    
+
     // "RIFF" chunk descriptor
     header[0] = 0x52; header[1] = 0x49; header[2] = 0x46; header[3] = 0x46; // "RIFF"
-    
+
     // File size - 8 (little-endian)
     const fileSize = 36 + dataLength;
     header[4] = fileSize & 0xff;
     header[5] = (fileSize >> 8) & 0xff;
     header[6] = (fileSize >> 16) & 0xff;
     header[7] = (fileSize >> 24) & 0xff;
-    
+
     header[8] = 0x57; header[9] = 0x41; header[10] = 0x56; header[11] = 0x45; // "WAVE"
-    
+
     // "fmt " sub-chunk
     header[12] = 0x66; header[13] = 0x6d; header[14] = 0x74; header[15] = 0x20; // "fmt "
     header[16] = 0x10; header[17] = 0x00; header[18] = 0x00; header[19] = 0x00; // Subchunk1Size = 16
     header[20] = 0x01; header[21] = 0x00; // AudioFormat = 1 (PCM)
     header[22] = 0x01; header[23] = 0x00; // NumChannels = 1 (mono)
-    
+
     // SampleRate (little-endian)
     header[24] = sampleRate & 0xff;
     header[25] = (sampleRate >> 8) & 0xff;
     header[26] = (sampleRate >> 16) & 0xff;
     header[27] = (sampleRate >> 24) & 0xff;
-    
+
     // ByteRate = sampleRate * 1 * 16/8 (little-endian)
     const byteRate = sampleRate * 2;
     header[28] = byteRate & 0xff;
     header[29] = (byteRate >> 8) & 0xff;
     header[30] = (byteRate >> 16) & 0xff;
     header[31] = (byteRate >> 24) & 0xff;
-    
+
     header[32] = 0x02; header[33] = 0x00; // BlockAlign = 2
     header[34] = 0x10; header[35] = 0x00; // BitsPerSample = 16
-    
+
     // "data" sub-chunk
     header[36] = 0x64; header[37] = 0x61; header[38] = 0x74; header[39] = 0x61; // "data"
-    
+
     // Data size (little-endian)
     header[40] = dataLength & 0xff;
     header[41] = (dataLength >> 8) & 0xff;
     header[42] = (dataLength >> 16) & 0xff;
     header[43] = (dataLength >> 24) & 0xff;
-    
+
     return header;
   };
 
@@ -99,7 +100,7 @@ export default function InterviewPage() {
       console.log('[TTS] Starting TTS with text:', text);
       const dg = new DeepgramClient({ accessToken: token });
       console.log('[TTS] Client created, initiating connection');
-      
+
       const conn = dg.speak.live({
         model: 'aura-2-orion-en',
         encoding: 'linear16',
@@ -150,7 +151,7 @@ export default function InterviewPage() {
   // Play audio chunks from the agent
   const playAudio = (audioData: ArrayBuffer | Uint8Array) => {
     console.log('[Audio] playAudio called with:', audioData instanceof Uint8Array ? audioData.byteLength : (audioData as ArrayBuffer).byteLength, 'bytes');
-    
+
     if (!audioContextRef.current) {
       console.log('[Audio] Creating new AudioContext');
       try {
@@ -165,7 +166,7 @@ export default function InterviewPage() {
 
     const ctx = audioContextRef.current;
     console.log('[Audio] AudioContext state:', ctx.state, 'sampleRate:', ctx.sampleRate);
-    
+
     if (ctx.state === 'suspended') {
       console.log('[Audio] AudioContext suspended, attempting resume');
       ctx.resume()
@@ -179,7 +180,7 @@ export default function InterviewPage() {
     } else {
       buffer = audioData;
     }
-    
+
     console.log('[Audio] Pushing to queue, queue length before:', audioQueueRef.current.length);
     audioQueueRef.current.push(buffer);
     console.log('[Audio] Queue length after:', audioQueueRef.current.length);
@@ -199,14 +200,23 @@ export default function InterviewPage() {
       console.error('[Playback] No AudioContext, aborting');
       return;
     }
-    
+
     const ctx = audioContextRef.current;
     isPlayingRef.current = true;
     console.log('[Playback] Processor running, queue length:', audioQueueRef.current.length);
 
+    // Ensure we have at least 500ms of audio before starting (16000 Hz * 2 bytes * 0.5s = 16000 bytes)
+    const MIN_BUFFER_BYTES = 16000;
+    const totalQueuedBytes = audioQueueRef.current.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    if (totalQueuedBytes < MIN_BUFFER_BYTES) {
+      console.log('[Playback] Waiting for minimum buffer, have:', totalQueuedBytes, 'need:', MIN_BUFFER_BYTES);
+      isPlayingRef.current = false;
+      return;
+    }
+
     while (audioQueueRef.current.length > 0) {
       console.log('[Playback] Processing queue, remaining:', audioQueueRef.current.length);
-      
+
       // Use requestIdleCallback to process audio when main thread is idle
       await new Promise(resolve => {
         if ('requestIdleCallback' in window) {
@@ -225,19 +235,19 @@ export default function InterviewPage() {
       const targetBufferSize = connectionQuality >= 80
         ? 12000   // ~250ms
         : connectionQuality >= 50
-        ? 18000   // ~375ms
-        : connectionQuality >= 25
-        ? 24000   // ~500ms
-        : 36000;  // ~750ms
-      
+          ? 18000   // ~375ms
+          : connectionQuality >= 25
+            ? 24000   // ~500ms
+            : 36000;  // ~750ms
+
       if (audioQueueRef.current.length > 0) {
         const chunk = audioQueueRef.current.shift()!;
         chunksToMerge.push(chunk);
         totalSize += chunk.byteLength;
       }
-      
+
       await new Promise(resolve => setTimeout(resolve, waitMs));
-      
+
       while (audioQueueRef.current.length > 0 && totalSize < targetBufferSize) {
         const chunk = audioQueueRef.current.shift()!;
         chunksToMerge.push(chunk);
@@ -257,7 +267,7 @@ export default function InterviewPage() {
         const wavFile = new Uint8Array(wavHeader.length + mergedChunk.byteLength);
         wavFile.set(wavHeader, 0);
         wavFile.set(mergedChunk, wavHeader.length);
-        
+
         console.log('[Playback] Calling decodeAudioData with:', wavFile.length, 'bytes');
         const audioBuffer = await ctx.decodeAudioData(wavFile.buffer.slice(0));
         console.log('[Playback] Decode successful, duration:', audioBuffer.duration, 'length:', audioBuffer.length);
@@ -410,13 +420,16 @@ STYLE:
 - DO NOT quote or read text aloud - use the function instead
 
 SNIPPET USAGE:
+- **CRITICAL**: NEVER include the answer in the snippet - always replace it with "___" or "[hidden]"
 - Keep snippets SHORT (1-3 sentences max)
-- Use for fill-in-the-gap questions: show a fragment with a key part replaced by "___" or "[hidden]"
-- Example: "The author argues that ___ is the primary cause" - then ask them to fill in the blank
+- Use ONLY for fill-in-the-gap questions where you hide the key information
+- Example: Show "The author argues that ___ is the primary cause" (hiding the actual argument)
+- Then ask: "What goes in the blank?"
+- The answer should NOT be visible in the snippet - student must recall it from their work
 - Always hide_text_segment() after they answer
 
 AVAILABLE FUNCTIONS:
-- show_text_segment(segment): Display a SHORT text snippet (1-3 sentences). Use for fill-in-gap questions with parts replaced by "___"
+- show_text_segment(segment): Display a SHORT snippet with key parts replaced by "___" - DO NOT show answers
 - hide_text_segment(): Remove the displayed snippet after they answer
 - finish_interview(): End when you've covered enough ground (aim for 5-7 exchanges, not 20)
 
@@ -429,18 +442,18 @@ End the interview once you have a reasonable sense of their understanding. Don't
         setInterval(() => {
           (dgClient as any).keepAlive?.();
         }, 5000);
-      } catch (_) {}
+      } catch (_) { }
     });
 
     dgClient.once(AgentEvents.SettingsApplied, () => {
       console.log('[SettingsApplied] Agent settings confirmed by server');
       setMicState('open');
     });
-    
+
     // Barge-in: if user starts speaking, stop any agent audio playback
     dgClient.on(AgentEvents.UserStartedSpeaking, () => {
       if (currentSourceRef.current) {
-        try { currentSourceRef.current.stop(); } catch (_) {}
+        try { currentSourceRef.current.stop(); } catch (_) { }
       }
       audioQueueRef.current = [];
     });
@@ -461,7 +474,7 @@ End the interview once you have a reasonable sense of their understanding. Don't
     // Handle function calls from the LLM (guarded parsing so we never throw)
     dgClient.on(AgentEvents.FunctionCallRequest, (functionCall: any) => {
       console.log('[FunctionCallRequest] Raw payload:', JSON.stringify(functionCall));
-      
+
       const fns = Array.isArray(functionCall?.functions) && functionCall.functions.length > 0
         ? functionCall.functions
         : [functionCall];
@@ -513,12 +526,17 @@ End the interview once you have a reasonable sense of their understanding. Don't
   // Cleanup: disconnect agent and close audio context on unmount
   useEffect(() => {
     return () => {
-      try { (client as any)?.disconnect?.(); } catch (_) {}
-      try { currentSourceRef.current?.stop?.(); } catch (_) {}
+      try { (client as any)?.disconnect?.(); } catch (_) { }
+      try { currentSourceRef.current?.stop?.(); } catch (_) { }
       audioQueueRef.current = [];
-      try { audioContextRef.current?.close?.(); } catch (_) {}
+      try { audioContextRef.current?.close?.(); } catch (_) { }
     };
   }, [client]);
+
+  // Auto-scroll transcript to bottom when new messages arrive
+  useEffect(() => {
+    transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [transcript]);
 
   // Detect completion
   useEffect(() => {
@@ -536,6 +554,7 @@ End the interview once you have a reasonable sense of their understanding. Don't
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ transcript })
     });
+    router.push(`/interrogation/complete?submissionId=${submissionId}`);
   };
 
   if (!submissionId) {
@@ -550,148 +569,127 @@ End the interview once you have a reasonable sense of their understanding. Don't
 
   return (
     <>
-    <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-8 pb-6">
-          <h1 className="text-4xl font-bold mb-2">Verification Interview</h1>
-          <p className="text-muted-foreground">
-            Your submission requires verification. We’ll run a short interview to check some details about your submission.
-          </p>
-          <div className="mt-3 flex gap-3">
-            <Button
-              variant="outline"
-              className="h-9"
-              onClick={() => speakWithTTS('Audio check. You should hear this clearly.')}
-            >
-              Play audio check
-            </Button>
-          </div>
-        </div>
-
-        {/* Prominent Reference Snippet Box (inside container, above transcript) */}
-        {visibleSegment && (
-          <div className="mb-8 border border-border bg-white rounded-lg p-6 shadow-sm">
-            <h3 className="text-base font-semibold text-foreground mb-3">📖 Reference Snippet</h3>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed mb-4 max-h-48 overflow-y-auto">{visibleSegment}</p>
-            <Button onClick={() => setVisibleSegment(null)} variant="outline" className="h-9">
-              Dismiss
-            </Button>
-          </div>
-        )}
-
-        {/* Main content */}
-        {!isComplete ? (
-          <div className="space-y-6">
-            {/* Loading / Error */}
-            {!token && !error && (
-              <div className="border border-border bg-white rounded-lg p-4 shadow-sm flex items-center gap-2">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-                <span className="text-muted-foreground">Starting interview session...</span>
-              </div>
-            )}
-
-            {error && (
-              <div className="border border-border bg-white rounded-lg p-4 shadow-sm">
-                <p className="font-semibold text-destructive mb-2">⚠️ Error</p>
-                <p className="text-muted-foreground">{error}. Please refresh or try again.</p>
-              </div>
-            )}
-
-            {/* Countdown / Start */}
-            {token && !error && !client && (
-              <div className="border border-border bg-white rounded-lg p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="text-lg text-foreground">Starting shortly</p>
-                  <p className="text-3xl font-bold text-foreground">{countdown}s</p>
-                </div>
-                <p className="mb-4 text-sm text-muted-foreground">
-                  We’ll have an audio interview to check some details about your homework.
-                  Please enable your microphone and be in a quiet space.
-                </p>
-                <div className="w-full bg-muted rounded">
-                  <div className="h-3 bg-primary rounded transition-all" style={{ width: `${progressPct}%` }} />
-                </div>
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <Button onClick={connect} className="h-10 bg-primary text-primary-foreground hover:bg-primary/90">Start Now</Button>
-                  <Button onClick={skipInterview} variant="outline" className="h-10">Skip Interview</Button>
-                </div>
-              </div>
-            )}
-
-            {/* Transcript */}
-            {transcript.length > 0 && (
-              <div className="border border-border bg-white rounded-lg p-6 max-h-[50vh] overflow-y-auto space-y-4 shadow-sm">
-                {transcript.map((msg, idx) => (
-                  <div key={idx} className={msg.role === 'user' ? 'text-right' : 'text-left'}>
-                    <div className={`inline-block max-w-xs px-4 py-2 rounded-lg ${msg.role === 'user' ? 'bg-muted text-foreground' : 'bg-gray-100 text-foreground border border-border'}`}>
-                      <p className="text-xs font-semibold mb-1 opacity-75">{msg.role === 'user' ? 'You' : 'Interviewer'}</p>
-                      <p>{msg.content}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Mic Control */}
-            {token && !error && client && (
-              <div className="border border-border bg-white rounded-lg p-6 shadow-sm">
-                <div className="flex flex-col items-center gap-4">
-                  <p className="text-foreground font-semibold">{micState === 'open' ? 'Listening...' : 'Loading audio...'}</p>
-                  <Mic state={isMuted ? 'closed' : micState} client={client} />
-                  <Button
-                    onClick={() => setIsMuted(!isMuted)}
-                    variant={isMuted ? 'destructive' : 'outline'}
-                    className="h-10"
-                  >
-                    {isMuted ? '🔇 Unmute Microphone' : '🔊 Mute Microphone'}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Complete */}
-            <div className="border border-border bg-white rounded-lg p-6 text-center shadow-sm">
-              <p className="text-2xl font-bold text-foreground mb-2">✓ Interview Complete</p>
-              <p className="text-muted-foreground mb-6">Your responses have been recorded and will be reviewed.</p>
-              <Button onClick={() => router.push('/student')} className="bg-green-600 hover:bg-green-700 text-white">Back to Dashboard</Button>
+      <div className="min-h-screen">
+        <div className="max-w-5xl mx-auto p-6">
+          {/* Header */}
+          <div className="mb-8 pb-6">
+            <h1 className="text-4xl font-bold mb-2">Verification Interview</h1>
+            <p className="text-muted-foreground">
+              Your submission requires verification. We’ll run a short interview to check some details about your submission.
+            </p>
+            <div className="mt-3 flex gap-3">
+              <Button
+                variant="outline"
+                className="h-9"
+                onClick={() => speakWithTTS('Audio check. You should hear this clearly.')}
+              >
+                🔊 Play audio check
+              </Button>
+              {client && (
+                <Button
+                  onClick={() => setIsMuted(!isMuted)}
+                  variant={isMuted ? 'destructive' : 'outline'}
+                  className="h-9"
+                >
+                  {isMuted ? '🔇 Unmute Mic' : '🎤 Mute Mic'}
+                </Button>
+              )}
             </div>
+          </div>
 
-            {/* Summary */}
-            {transcript.length > 0 && (
-              <div className="border border-border bg-white rounded-lg p-6 shadow-sm">
-                <h3 className="font-bold text-lg text-foreground mb-4">Interview Summary</h3>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+          {/* Main content */}
+          {!isComplete ? (
+            <div className="space-y-6">
+              {/* Loading / Error */}
+              {!token && !error && (
+                <div className="border border-border bg-white rounded-lg p-4 shadow-sm flex items-center gap-2">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  <span className="text-muted-foreground">Starting interview session...</span>
+                </div>
+              )}
+
+              {error && (
+                <div className="border border-border bg-white rounded-lg p-4 shadow-sm">
+                  <p className="font-semibold text-destructive mb-2">⚠️ Error</p>
+                  <p className="text-muted-foreground">{error}. Please refresh or try again.</p>
+                </div>
+              )}
+
+              {/* Countdown / Start */}
+              {token && !error && !client && (
+                <div className="border border-border bg-white rounded-lg p-6 shadow-sm">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-lg text-foreground">Starting shortly</p>
+                    <p className="text-3xl font-bold text-foreground">{countdown}s</p>
+                  </div>
+                  <p className="mb-4 text-sm text-muted-foreground">
+                    We'll have an audio interview to check some details about your homework.
+                    Please enable your microphone and be in a quiet space.
+                  </p>
+                  <div className="w-full bg-muted rounded">
+                    <div className="h-3 bg-primary rounded transition-all" style={{ width: `${progressPct}%` }} />
+                  </div>
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    <Button onClick={connect} className="h-10 bg-primary text-primary-foreground hover:bg-primary/90">Start Now</Button>
+                    <Button onClick={skipInterview} variant="outline" className="h-10">Skip Interview</Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Transcript */}
+              {transcript.length > 0 && (
+                <div className="border border-border bg-white rounded-lg p-6 overflow-y-auto space-y-4 shadow-sm" style={{ maxHeight: '50vh' }}>
                   {transcript.map((msg, idx) => (
-                    <div key={idx} className="text-sm text-muted-foreground">
-                      <span className="font-semibold">{msg.role === 'user' ? 'You' : 'Interviewer'}:</span>{' '}
-                      {msg.content.substring(0, 100)}{msg.content.length > 100 ? '...' : ''}
+                    <div key={idx} className={msg.role === 'user' ? 'text-right' : 'text-left'}>
+                      <div className={`inline-block max-w-xs px-4 py-2 rounded-lg ${msg.role === 'user' ? 'bg-muted text-foreground' : 'bg-gray-100 text-foreground border border-border'}`}>
+                        <p className="text-xs font-semibold mb-1 opacity-75">{msg.role === 'user' ? 'You' : 'Interviewer'}</p>
+                        <p>{msg.content}</p>
+                      </div>
                     </div>
                   ))}
+                  <div ref={transcriptEndRef} />
+                </div>
+              )}
+
+              {/* Reference Snippet Box (below transcript) */}
+              {visibleSegment && (
+                <div className="border-2 border-primary bg-primary/5 rounded-lg p-6 shadow-lg">
+                  <h3 className="text-lg font-bold text-primary mb-3">📖 Reference Snippet</h3>
+                  <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed mb-4 max-h-48 overflow-y-auto bg-white p-4 border border-border rounded">{visibleSegment}</p>
+                  <Button onClick={() => setVisibleSegment(null)} variant="outline" className="h-9">
+                    Dismiss
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Completing */}
+              <div className="border border-border bg-white rounded-lg p-6 text-center shadow-sm">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  <span className="text-muted-foreground">Completing interview...</span>
                 </div>
               </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-    {/* Network speed bar at the bottom */}
-    <div className="fixed bottom-0 left-0 right-0 z-40">
-      <div className="max-w-5xl mx-auto px-6 pb-4">
-        <div className="bg-white border border-border rounded-lg shadow-sm p-3">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">Network</span>
-            <span className="text-xs font-semibold">{Math.round(connectionQuality)}%</span>
-          </div>
-          <div className="mt-2 h-2 bg-muted rounded">
-            <div className="h-2 rounded bg-primary" style={{ width: `${connectionQuality}%` }} />
-          </div>
-          <div className="mt-1 text-[10px] text-muted-foreground">Deepgram RTT {rttMs > 1 ? Math.round(rttMs) + ' ms' : 'estimating…'} • Adaptive buffer ~{connectionQuality >= 80 ? '250' : connectionQuality >= 50 ? '375' : connectionQuality >= 25 ? '500' : '750'}ms</div>
+            </div>
+          )}
         </div>
       </div>
-    </div>
+      {/* Network speed bar at the bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-40">
+        <div className="max-w-5xl mx-auto px-6 pb-4">
+          <div className="bg-white border border-border rounded-lg shadow-sm p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">Network</span>
+              <span className="text-xs font-semibold">{Math.round(connectionQuality)}%</span>
+            </div>
+            <div className="mt-2 h-2 bg-muted rounded">
+              <div className="h-2 rounded bg-primary" style={{ width: `${connectionQuality}%` }} />
+            </div>
+            <div className="mt-1 text-[10px] text-muted-foreground">Deepgram RTT {rttMs > 1 ? Math.round(rttMs) + ' ms' : 'estimating…'} • Adaptive buffer ~{connectionQuality >= 80 ? '250' : connectionQuality >= 50 ? '375' : connectionQuality >= 25 ? '500' : '750'}ms</div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
