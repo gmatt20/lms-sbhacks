@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { type AgentLiveClient } from "@deepgram/sdk";
-import { voiceAgentLog } from "@/lib/Logger";
 
 interface MicProps {
   state: "open" | "closed" | "loading";
@@ -25,8 +24,6 @@ export const Mic = ({ state, client, onError }: MicProps) => {
   // === RECORDING CONTROL ===
   const startRecording = useCallback(async () => {
     try {
-      voiceAgentLog.microphone("Starting real-time microphone streaming...");
-
       // Firefox-specific getUserMedia constraints
       let audioConstraints;
       if (isFirefox) {
@@ -113,7 +110,6 @@ export const Mic = ({ state, client, onError }: MicProps) => {
         try {
           client.send(audioBuffer);
         } catch (error) {
-          voiceAgentLog.error(`Error sending audio to agent: ${error}`);
           onError?.(`Error sending audio: ${error}`);
         }
       };
@@ -123,18 +119,12 @@ export const Mic = ({ state, client, onError }: MicProps) => {
 
       isRecordingRef.current = true;
       setIsRecording(true);
-
-      voiceAgentLog.microphone(
-        `Real-time microphone streaming started (${audioContext.sampleRate}Hz)`,
-      );
     } catch (error) {
-      voiceAgentLog.error(`Error starting microphone: ${error}`);
       onError?.(`Microphone access error: ${error}`);
     }
   }, [client, onError]);
 
   const stopRecording = useCallback(() => {
-    voiceAgentLog.microphone("Stopping microphone streaming...");
     if (processorRef.current) {
       processorRef.current.disconnect();
       processorRef.current = null;
@@ -157,7 +147,6 @@ export const Mic = ({ state, client, onError }: MicProps) => {
 
     isRecordingRef.current = false;
     setIsRecording(false);
-    voiceAgentLog.microphone("Microphone streaming stopped");
   }, []);
 
   useEffect(() => {
