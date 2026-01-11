@@ -6,8 +6,8 @@ import {
   SignedOut,
   UserButton,
 } from "@clerk/nextjs";
-import Link from "next/link";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { LogoLink } from "@/components/LogoLink";
 import "./globals.css";
 const plexSans = IBM_Plex_Sans({
   subsets: ["latin"],
@@ -43,15 +43,7 @@ export default function RootLayout({
       <html lang="en">
         <body className={`w-screen h-screen ${plexSans.className} ${plexMono.variable}`}>
           <header className="flex items-center justify-between h-16 px-6 border-b border-border bg-white">
-            <Link href="/" className="flex items-center gap-3 font-semibold text-lg text-foreground">
-              <span className="flex h-10 w-10 items-center justify-center bg-primary text-primary-foreground font-bold tracking-wide">
-                GM
-              </span>
-              <div className="leading-tight">
-                <div>GradeMeIn</div>
-                <div className="text-xs font-normal text-muted-foreground">Teach with confidence. Grade with trust.</div>
-              </div>
-            </Link>
+            <LogoLink />
             <div className="flex items-center gap-2">
               <SignedOut>
                 <SignInButton>

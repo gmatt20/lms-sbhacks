@@ -2,6 +2,9 @@
 
 import { GetStartedButton } from "@/components/GetStartedButton";
 import { RotatingText } from "@/components/RotatingText";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 // Keep hero highlights fixed so the tone stays intentional
 const highlightCards = [
@@ -30,6 +33,27 @@ const steps = [
 ];
 
 export default function Home() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Wait for Clerk to finish loading
+    if (!isLoaded) return;
+
+    // If user is logged in, check their role and redirect
+    if (user) {
+      const role = user.publicMetadata?.role as string;
+
+      if (role === "teacher") {
+        router.push("/teacher");
+      } else if (role === "student") {
+        router.push("/student");
+      }
+      // If they have no role, they'll need to go through onboarding
+      // The GetStartedButton component handles that flow
+    }
+  }, [user, isLoaded, router]);
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-white text-foreground">
       <section className="border-b border-border bg-white px-6 py-16">
