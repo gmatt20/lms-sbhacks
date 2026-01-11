@@ -56,7 +56,14 @@ export function SubmissionForm({ assignmentId, studentId }: SubmissionFormProps)
           disabled={loading}
           className="h-10 bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          {loading ? 'Submitting...' : 'Submit'}
+          {loading ? (
+            <span className="flex items-center gap-2">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></div>
+              Submitting...
+            </span>
+          ) : (
+            'Submit'
+          )}
         </Button>
       </form>
 

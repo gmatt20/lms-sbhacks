@@ -286,7 +286,14 @@ export default function SubmissionReview() {
                     }}
                     disabled={saving}
                   >
-                    {saving ? 'Saving...' : 'Save Grade'}
+                    {saving ? (
+                      <span className="flex items-center gap-2">
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent"></div>
+                        Saving...
+                      </span>
+                    ) : (
+                      'Save Grade'
+                    )}
                   </Button>
                 </div>
               </div>
