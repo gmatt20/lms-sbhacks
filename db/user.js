@@ -6,7 +6,5 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     role: { type: String, enum: ['professor', 'student'], required: true },
     school: String,
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now}
 });
-
-module.exports = mongoose.models.User || mongoose.model('User', userSchema);
