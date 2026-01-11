@@ -26,6 +26,9 @@ const plexMono = IBM_Plex_Mono({
 export const metadata: Metadata = {
   title: "GradeMeIn",
   description: "Help catch issues in student work early",
+  icons: {
+    icon: "/logo_grademein_flattened.svg",
+  },
 };
 
 export const viewport: Viewport = {

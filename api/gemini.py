@@ -392,11 +392,13 @@ def detect_indicators(student_text: str, original_prompt: str, secret_prompt: st
                             "type": "ARRAY",
                             "items": {"type": "STRING"}
                         }
-                    }
+                    },
+                    "required": ["change", "found", "locations"]
                 }
             },
             "summary": {"type": "STRING"}
-        }
+        },
+        "required": ["indicators_found", "summary"]
     }
     
     changes_str = "\n".join([f"- {change}" for change in changes])
@@ -425,6 +427,10 @@ DETECTION CRITERIA:
 2. Consider context: Does the student's response directly address the modified instruction?
 3. Check for unique examples, phrases, or requirements that only appear in the mutated version
 4. Be strict: Only mark as "found" if there's clear evidence the student saw the modified prompt
+
+REQUIRED OUTPUT:
+- indicators_found: array of detection results, EACH with change, found, and locations fields
+- summary: a brief summary of your findings and overall confidence level
 
 Student Submitted Text:
 {student_text}"""
@@ -484,7 +490,7 @@ Student Submitted Text:
         return {
             "score": f"{found_count}/{total_count}",
             "indicators_found": indicators_for_display,
-            "summary": result["summary"]
+            "summary": result.get("summary", "")
         }
     except Exception as e:
         print(f"DEBUG: Indicators parsing error: {e}, response: {response}")
