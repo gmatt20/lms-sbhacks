@@ -189,16 +189,26 @@ You have TWO strategies:
 
 STRATEGY 1: ATOMIC REPLACEMENTS (PREFERRED - try this first)
 - Replace ONLY incidental background details that aren't core to the assignment
-- Focus on: example names, background dates, sample numbers, illustrative details
+- Focus on: **DISTINCT entities** like names, places, specific examples, illustrative details
+- **CRITICAL**: Avoid replacements that create overlapping text with the original
+- ❌ AVOID: Changing numbers/ranges that overlap (e.g., "6-8 pages" → "6-9 pages" overlaps with "6-8")
+- ❌ AVOID: Changing requirements that overlap (e.g., "at least FIVE sources" → "at least SIX sources")
+- ✅ PREFER: Replacing distinct entities that don't overlap (e.g., "Ellen" → "Ellie", "Portland" → "Portsmouth")
 - **CRITICAL**: Use EXACT phrasing from the original prompt for the "original_text"
 - DO NOT change core requirements, key dates, or central concepts
 
-EXAMPLES:
-1. Literature: "a character named Ellen" → "a character named Ellie"
-2. History: "published in 1925" → "published in 1926" (if not a key historical fact)
-3. Science: "approximately 50 grams" → "approximately 52 grams" (if not a precise requirement)
-4. Math: "250" → "252" (if not a precise requirement)
-5. Geography: "the city of Portland" → "the city of Portsmouth" (if just an example)
+EXAMPLES OF GOOD REPLACEMENTS (non-overlapping, distinct entities):
+1. **Names**: "a character named Ellen" → "a character named Ellie"
+2. **Places**: "the city of Portland" → "the city of Portsmouth"
+3. **Specific examples**: "such as the Eiffel Tower" → "such as the Arc de Triomphe"
+4. **Background dates** (if not key facts): "published in 1925" → "published in 1926"
+5. **Example numbers** (if not requirements): "approximately 50 grams" → "approximately 52 grams"
+
+EXAMPLES OF BAD REPLACEMENTS (overlapping text - AVOID THESE):
+❌ "6-8 page essay" → "6-9 page essay" (overlaps: "6-" appears in both)
+❌ "at least FIVE sources" → "at least SIX sources" (overlaps: "at least" and "sources")
+❌ "1945-1991" → "1946-1991" (overlaps: "-1991")
+❌ "TWO primary sources" → "THREE primary sources" (overlaps: "primary sources")
 
 STRATEGY 2: SECRET INJECTIONS (use when replacements aren't sufficient)
 - Add HIGHLY SPECIFIC requirements using IMPERATIVE language
