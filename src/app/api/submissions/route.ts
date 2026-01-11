@@ -42,8 +42,9 @@ export async function POST(request: Request) {
     formData.append('student_id', studentId);
     formData.append('response_text', submissionText);
 
+    const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:5000';
     const analysisResponse = await fetch(
-      `${process.env.PYTHON_API_URL}/submit`,
+      `${PYTHON_API_URL}/submit`,
       { method: 'POST', body: formData }
     );
 

@@ -66,10 +66,63 @@ export default function AssignmentView() {
       </Link>
       <h1 className="mb-4 text-2xl font-bold">{assignment.title}</h1>
 
-      <div className="mb-6">
-        <h2 className="mb-2 text-lg font-semibold">Assignment PDF</h2>
-        <PDFViewer pdfBase64={pdfBase64} />
+      <div className="mb-6 space-y-4">
+        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <span className="font-semibold">Due:</span>
+            <span>{new Date(assignment.dueDate).toLocaleDateString()}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-semibold">Points:</span>
+            <span>{assignment.totalPoints || 100}</span>
+          </div>
+        </div>
+
+        {assignment.description && (
+          <p className="text-muted-foreground">{assignment.description}</p>
+        )}
       </div>
+
+      <div className="mb-6">
+        <h2 className="mb-2 text-lg font-semibold">Assignment Instructions</h2>
+        <div className="rounded border bg-card p-4">
+          <PDFViewer pdfBase64={pdfBase64} />
+        </div>
+      </div>
+
+      {assignment.rubricVisibleToStudents && assignment.rubric && assignment.rubric.length > 0 && (
+        <div className="mb-8">
+          <h2 className="mb-2 text-lg font-semibold">Grading Rubric</h2>
+          <div className="rounded border bg-card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="px-4 py-2 text-left font-semibold">Criterion</th>
+                  <th className="px-4 py-2 text-left font-semibold">Description</th>
+                  <th className="px-4 py-2 text-right font-semibold">Points</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {assignment.rubric.map((item: any, i: number) => (
+                  <tr key={i}>
+                    <td className="px-4 py-2 font-medium">{item.criterion}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{item.description}</td>
+                    <td className="px-4 py-2 text-right">{item.maxPoints}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-muted/50 font-semibold">
+                <tr>
+                  <td colSpan={2} className="px-4 py-2 text-right">Total</td>
+                  <td className="px-4 py-2 text-right">
+                    {assignment.rubric.reduce((sum: number, r: any) => sum + (r.maxPoints || 0), 0)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div>
         <h2 className="mb-2 text-lg font-semibold">Submit your response</h2>

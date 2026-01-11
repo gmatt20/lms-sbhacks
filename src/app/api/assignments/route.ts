@@ -38,14 +38,14 @@ export async function POST(request: Request) {
     console.log('[ASSIGNMENTS] Creating assignment:', { title, teacherId, contentLength: content?.length });
 
     // Check if Python API URL is configured
-    if (!process.env.PYTHON_API_URL) {
+    const PYTHON_API_URL = process.env.PYTHON_API_URL || 'http://localhost:5000';
+
+    if (!PYTHON_API_URL) {
+      // identifying impossible state just in case
       console.error('[ASSIGNMENTS] PYTHON_API_URL not configured');
-      return NextResponse.json({
-        error: 'Python API URL not configured. Add PYTHON_API_URL to .env'
-      }, { status: 500 });
     }
 
-    const pythonUrl = `${process.env.PYTHON_API_URL}/generate`;
+    const pythonUrl = `${PYTHON_API_URL}/generate`;
     console.log('[ASSIGNMENTS] Calling Python API:', pythonUrl);
 
     // Call Python API to generate mutated version

@@ -724,19 +724,30 @@ def assignment_rubric(assignment_id):
         return jsonify({"rubric": rubric, "visibleToStudents": visible, "totalPoints": total})
     else:
         data = request.json or {}
-        rubric = data.get("rubric", [])
-        visible = bool(data.get("visibleToStudents", False))
-        total = sum(item.get("maxPoints", 0) for item in rubric)
+        
+        update_fields = {"updatedAt": datetime.utcnow()}
+        
+        if "rubric" in data:
+            rubric = data["rubric"]
+            total = sum(item.get("maxPoints", 0) for item in rubric)
+            update_fields["rubric"] = rubric
+            update_fields["totalPoints"] = total
+            
+        if "visibleToStudents" in data:
+            update_fields["rubricVisibleToStudents"] = bool(data["visibleToStudents"])
+
         assignments_col.update_one(
             {"_id": ObjectId(assignment_id)},
-            {"$set": {
-                "rubric": rubric,
-                "rubricVisibleToStudents": visible,
-                "totalPoints": total,
-                "updatedAt": datetime.utcnow()
-            }}
+            {"$set": update_fields}
         )
-        return jsonify({"rubric": rubric, "visibleToStudents": visible, "totalPoints": total})
+        
+        # Return updated document state
+        updated = assignments_col.find_one({"_id": ObjectId(assignment_id)})
+        return jsonify({
+            "rubric": updated.get("rubric", []), 
+            "visibleToStudents": updated.get("rubricVisibleToStudents", False),
+            "totalPoints": updated.get("totalPoints", 0)
+        })
 
 
 def _grade_submission(submission_id):

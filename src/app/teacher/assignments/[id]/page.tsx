@@ -134,14 +134,6 @@ export default function AssignmentDetail() {
               <Link href={`/teacher/assignments/${params.id}/rubric`}>Edit rubric</Link>
             </Button>
             <Button
-              variant="outline"
-              disabled={updating}
-              onClick={() => handleStatusChange(assignment.status === 'hidden' ? 'open' : 'hidden')}
-              className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted"
-            >
-              {assignment.status === 'hidden' ? 'Show Assignment' : 'Hide Assignment'}
-            </Button>
-            <Button
               variant="destructive"
               disabled={updating}
               onClick={() => handleStatusChange('deleted')}
@@ -155,6 +147,60 @@ export default function AssignmentDetail() {
             >
               <Link href={`/api/assignments/${params.id}/pdf`}>Download PDF</Link>
             </Button>
+          </div>
+        </div>
+
+        <div className="mt-6 flex items-center gap-8 border-t border-border pt-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => handleStatusChange(assignment.status === 'hidden' ? 'open' : 'hidden')}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${assignment.status !== 'hidden' ? 'bg-primary' : 'bg-gray-200'
+                }`}
+            >
+              <span className="sr-only">Show Assignment</span>
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${assignment.status !== 'hidden' ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+              />
+            </button>
+            <span className="text-sm font-medium text-muted-foreground">
+              Show Assignment to Students
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={async () => {
+                setUpdating(true);
+                try {
+                  const newState = !assignment.rubricVisibleToStudents;
+                  const res = await fetch(`/api/assignments/${params.id}/rubric`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visibleToStudents: newState }),
+                  });
+                  if (!res.ok) throw new Error('Failed to update rubric visibility');
+                  const data = await res.json();
+                  setAssignment({ ...assignment, rubricVisibleToStudents: data.visibleToStudents });
+                } catch (err) {
+                  console.error('Error toggling rubric:', err);
+                  alert('Failed to update rubric visibility');
+                } finally {
+                  setUpdating(false);
+                }
+              }}
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${assignment.rubricVisibleToStudents ? 'bg-primary' : 'bg-gray-200'
+                }`}
+            >
+              <span className="sr-only">Show Rubric</span>
+              <span
+                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${assignment.rubricVisibleToStudents ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+              />
+            </button>
+            <span className="text-sm font-medium text-muted-foreground">
+              Show Rubric to Students
+            </span>
           </div>
         </div>
       </div>
