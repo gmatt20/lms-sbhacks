@@ -30,19 +30,19 @@ export default function TestConnectionPage() {
 
   return (
     <div className="mx-auto max-w-2xl p-6">
-      <h1 className="mb-6 text-3xl font-bold">API connection check</h1>
+      <h1 className="mb-6 text-3xl font-bold">Connection check</h1>
 
       <button
         onClick={testConnection}
         disabled={loading}
         className="bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
       >
-        {loading ? 'Testing, please wait...' : 'Test connection now'}
+        {loading ? 'Testing...' : 'Test now'}
       </button>
 
       {status && (
         <div className="mt-6 border border-border bg-secondary/10 p-4">
-          <h2 className="mb-2 font-bold text-foreground">✓ Connection works</h2>
+          <h2 className="mb-2 font-bold text-foreground">✓ Works</h2>
           <pre className="overflow-auto text-sm">
             {JSON.stringify(status, null, 2)}
           </pre>
@@ -51,7 +51,7 @@ export default function TestConnectionPage() {
 
       {error && (
         <div className="mt-6 border border-border bg-destructive/10 p-4">
-          <h2 className="mb-2 font-bold text-destructive">✗ Connection failed</h2>
+          <h2 className="mb-2 font-bold text-destructive">✗ Failed</h2>
           <pre className="overflow-auto text-sm text-destructive">
             {error}
           </pre>
@@ -59,13 +59,13 @@ export default function TestConnectionPage() {
       )}
 
       <div className="mt-8 border border-border bg-card p-4">
-        <h3 className="mb-2 font-semibold">What this checks</h3>
+        <h3 className="mb-2 font-semibold">Checks</h3>
         <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-          <li>Next.js server is running</li>
-          <li>Flask API runs on port 5000</li>
-          <li>CORS is set up correctly</li>
-          <li>Environment variables are present</li>
-          <li>Network connectivity between services</li>
+          <li>Next.js server running</li>
+          <li>Flask API on port 5000</li>
+          <li>CORS configured</li>
+          <li>Environment variables set</li>
+          <li>Network connectivity</li>
         </ul>
       </div>
     </div>

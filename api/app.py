@@ -9,11 +9,11 @@ import os
 import hashlib
 import json
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 
 load_dotenv()
 
-from gemini import mutate_prompt, detect_indicators, generate_rubric_suggestions, grade_with_rubric
+from gemini import mutate_prompt, detect_indicators, generate_rubric_suggestions, grade_with_rubric, analyze_interview_transcript
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -50,7 +50,7 @@ def _hash_key(parts):
 
 
 def cache_get(key: str):
-    doc = cache_col.find_one({"key": key, "expiresAt": {"$gt": datetime.utcnow()}})
+    doc = cache_col.find_one({"key": key, "expiresAt": {"$gt": datetime.now(UTC)}})
     return doc.get("value") if doc else None
 
 
@@ -61,8 +61,8 @@ def cache_set(key: str, value, ttl_seconds: int = 3600):
             "$set": {
                 "key": key,
                 "value": value,
-                "createdAt": datetime.utcnow(),
-                "expiresAt": datetime.utcnow() + timedelta(seconds=ttl_seconds)
+                "createdAt": datetime.now(UTC),
+                "expiresAt": datetime.now(UTC) + timedelta(seconds=ttl_seconds)
             }
         },
         upsert=True
@@ -340,13 +340,22 @@ def submit():
     if not response_text:
         return jsonify({"error": "No response text provided"}), 400
     
-    # Detect indicators in submission
-    analysis = detect_indicators(
-        student_text=response_text,
-        original_prompt=homework["original_prompt"],
-        secret_prompt=homework["mutated_prompt"],
-        changes=homework.get("changes", [])
-    )
+    # Create cache key for detection
+    cache_key = _hash_key(["detect", homework_id, response_text])
+    cached_analysis = cache_get(cache_key)
+    
+    if cached_analysis:
+        print(f"[SUBMIT] Using cached detection result for {cache_key}")
+        analysis = cached_analysis
+    else:
+        # Detect indicators in submission
+        analysis = detect_indicators(
+            student_text=response_text,
+            original_prompt=homework["original_prompt"],
+            secret_prompt=homework["mutated_prompt"],
+            changes=homework.get("changes", [])
+        )
+        cache_set(cache_key, analysis, ttl_seconds=3600*24) # 24 hour cache for submissions
     
     # Store submission and analysis in MongoDB
     submission_doc = {
@@ -408,6 +417,14 @@ def detect():
     if not student_text:
         return jsonify({"error": "No student text provided"}), 400
     
+    # Create cache key
+    cache_key = _hash_key(["detect-standalone", original_prompt, secret_prompt, str(changes), student_text])
+    cached_result = cache_get(cache_key)
+    
+    if cached_result:
+        print(f"[DETECT] Using cached result for {cache_key}")
+        return jsonify(cached_result)
+
     # Detect indicators
     detection_result = detect_indicators(
         student_text=student_text,
@@ -415,6 +432,7 @@ def detect():
         secret_prompt=secret_prompt,
         changes=changes
     )
+    cache_set(cache_key, detection_result, ttl_seconds=3600*24)
     
     return jsonify(detection_result)
 
@@ -632,28 +650,75 @@ def get_assignment_pdf(assignment_id):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/assignments/<assignment_id>", methods=["GET"])
+@app.route("/api/assignments/<assignment_id>", methods=["GET", "PUT"])
 def get_assignment(assignment_id):
-    """Get a single assignment by ID."""
-    try:
-        assignment = assignments_col.find_one({"_id": ObjectId(assignment_id)})
-        
-        if not assignment:
-            return jsonify({"error": "Assignment not found"}), 404
-        
-        assignment["_id"] = str(assignment["_id"])
-        assignment["courseId"] = str(assignment["courseId"])
+    """Get or update a single assignment by ID."""
+    if request.method == "GET":
+        try:
+            assignment = assignments_col.find_one({"_id": ObjectId(assignment_id)})
+            
+            if not assignment:
+                return jsonify({"error": "Assignment not found"}), 404
+            
+            assignment["_id"] = str(assignment["_id"])
+            assignment["courseId"] = str(assignment["courseId"])
 
-        # Attach audit info if available
-        homework = homeworks_col.find_one({"assignment_id": assignment_id})
-        if homework:
-            assignment["mutations"] = homework.get("mutations", [])
-            assignment["mutated_prompt"] = homework.get("mutated_prompt", "")
-        
-        return jsonify({"assignment": assignment})
-    except Exception as e:
-        print(f"[ASSIGNMENT] Error: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+            # Attach audit info if available
+            homework = homeworks_col.find_one({"assignment_id": assignment_id})
+            if homework:
+                assignment["mutations"] = homework.get("mutations", [])
+                assignment["mutated_prompt"] = homework.get("mutated_prompt", "")
+            
+            return jsonify({"assignment": assignment})
+        except Exception as e:
+            print(f"[ASSIGNMENT] Error: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+    
+    else:  # PUT
+        try:
+            data = request.json or {}
+            content = data.get("content")
+            
+            if not content:
+                return jsonify({"error": "Content is required"}), 400
+            
+            # Regenerate mutations for the new content
+            print(f"[ASSIGNMENT] Regenerating mutations for assignment {assignment_id}")
+            from gemini import mutate_prompt # Ensure mutate_prompt is available
+            mutation_result = mutate_prompt(prompt_text=content)
+            mutated_text = mutation_result["mutated"]
+            mutations = mutation_result["mutations"]
+            changes = mutation_result["changes"]
+            
+            # Update homework metadata in MongoDB
+            homework_doc = {
+                "assignment_id": assignment_id,
+                "original_prompt": content,
+                "mutated_prompt": mutated_text,
+                "mutations": mutations,
+                "changes": changes
+            }
+            
+            homeworks_col.update_one(
+                {"assignment_id": assignment_id},
+                {"$set": homework_doc},
+                upsert=True
+            )
+            
+            # Update assignment content
+            assignments_col.update_one(
+                {"_id": ObjectId(assignment_id)},
+                {"$set": {"instructions": content, "updatedAt": datetime.now(UTC)}} # Changed 'content' to 'instructions' to match schema
+            )
+            
+            return jsonify({
+                "success": True,
+                "mutations": mutations,
+                "changes": changes
+            })
+        except Exception as e:
+            print(f"[ASSIGNMENT] Update error: {str(e)}")
+            return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/assignments/<assignment_id>/submissions", methods=["GET"])
@@ -683,7 +748,7 @@ def update_assignment_status(assignment_id):
     try:
         result = assignments_col.update_one(
             {"_id": ObjectId(assignment_id)},
-            {"$set": {"status": status, "updatedAt": datetime.utcnow()}}
+            {"$set": {"status": status, "updatedAt": datetime.now(UTC)}}
         )
         if result.matched_count == 0:
             return jsonify({"error": "Assignment not found"}), 404
@@ -725,7 +790,7 @@ def assignment_rubric(assignment_id):
     else:
         data = request.json or {}
         
-        update_fields = {"updatedAt": datetime.utcnow()}
+        update_fields = {"updatedAt": datetime.now(UTC)}
         
         if "rubric" in data:
             rubric = data["rubric"]
@@ -795,13 +860,13 @@ def _grade_submission(submission_id):
     result = {
         "totalScore": total_score,
         "maxScore": total_max,
-        "gradedAt": datetime.utcnow().isoformat(),
+        "gradedAt": datetime.now(UTC).isoformat(),
         "criteria": final_criteria
     }
 
     submissions_col.update_one(
         {"_id": ObjectId(submission_id)},
-        {"$set": {"autoGrade": result, "updatedAt": datetime.utcnow()}}
+        {"$set": {"autoGrade": result, "updatedAt": datetime.now(UTC)}}
     )
     cache_set(cache_key, result, ttl_seconds=3600)
     return {"result": result, "cached": False, "status": 200}
@@ -828,6 +893,47 @@ def get_submission_grade(submission_id):
     return jsonify({"autoGrade": out["result"], "cached": out.get("cached", False)})
 
 
+@app.route("/api/submissions/<submission_id>/manual-grade", methods=["POST"])
+def save_manual_grade(submission_id):
+    """Save teacher's manual grade for a submission."""
+    data = request.json or {}
+    criteria = data.get("criteria", [])
+    total_score = data.get("totalScore", 0)
+    teacher_id = data.get("teacherId")
+    
+    if not criteria:
+        return jsonify({"error": "No criteria provided"}), 400
+    
+    try:
+        submission = submissions_col.find_one({"_id": ObjectId(submission_id)})
+        if not submission:
+            return jsonify({"error": "Submission not found"}), 404
+        
+        manual_grade = {
+            "totalScore": total_score,
+            "criteria": criteria,
+            "gradedAt": datetime.now(UTC).isoformat(),
+            "gradedBy": teacher_id
+        }
+        
+        submissions_col.update_one(
+            {"_id": ObjectId(submission_id)},
+            {
+                "$set": {
+                    "manualGrade": manual_grade,
+                    "score": total_score,
+                    "updatedAt": datetime.now(UTC)
+                }
+            }
+        )
+        
+        return jsonify({"success": True, "manualGrade": manual_grade})
+    
+    except Exception as e:
+        print(f"[MANUAL-GRADE] Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route("/api/submissions/<submission_id>", methods=["GET"])
 def get_submission(submission_id):
     """Get a single submission by ID."""
@@ -840,9 +946,83 @@ def get_submission(submission_id):
         submission["_id"] = str(submission["_id"])
         submission["assignmentId"] = str(submission["assignmentId"])
         
+        # Backward-compat: unify response text field
+        # Prefer 'submittedText', fall back to legacy 'submissionText' or 'response_text'
+        unified_text = (
+            submission.get("submittedText")
+            or submission.get("submissionText")
+            or submission.get("response_text")
+        )
+        if unified_text is not None:
+            submission["submittedText"] = unified_text
+            submission["response_text"] = unified_text
+
+        # Ensure indicatorsFound has the correct structure
+        if "indicatorsFound" in submission and submission["indicatorsFound"]:
+            indicators = submission["indicatorsFound"]
+            # Only keep indicators that have required fields
+            submission["indicatorsFound"] = [
+                ind for ind in indicators 
+                if ind.get("type") and ind.get("evidence") and ind.get("location")
+            ]
+        
         return jsonify({"submission": submission})
     except Exception as e:
         print(f"[SUBMISSION] Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/submissions/<submission_id>/transcript", methods=["POST"])
+def save_transcript(submission_id):
+    """Save interview transcript and analyze it."""
+    data = request.json or {}
+    transcript = data.get("transcript", [])
+    
+    if not transcript:
+        return jsonify({"error": "No transcript provided"}), 400
+
+    try:
+        submission = submissions_col.find_one({"_id": ObjectId(submission_id)})
+        if not submission:
+            return jsonify({"error": "Submission not found"}), 404
+        
+        # Analyze the interview
+        analysis = analyze_interview_transcript(
+            transcript=transcript,
+            submission_text=submission.get("response_text", "")
+        )
+        
+        # Determine status based on score
+        # Using exact user requirements: <50 = suspicious, >50 = verified
+        score = analysis.get("score", 0)
+        new_status = "flagged" if score < 50 else "verified"
+        
+        update_fields = {
+            "interviewTranscript": transcript,
+            "interviewScore": score,
+            "interviewReasoning": analysis.get("reasoning", ""),
+            "interviewVerdict": analysis.get("verdict", "UNCLEAR"),
+            "interviewCompleted": True,
+            "updatedAt": datetime.now(UTC)
+        }
+        
+        # Only update status if it was previously flagged/suspicious
+        if submission.get("status") == "flagged":
+             update_fields["status"] = new_status
+
+        submissions_col.update_one(
+            {"_id": ObjectId(submission_id)},
+            {"$set": update_fields}
+        )
+        
+        return jsonify({
+            "success": True,
+            "analysis": analysis,
+            "newStatus": new_status
+        })
+
+    except Exception as e:
+        print(f"[TRANSCRIPT] Error: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 

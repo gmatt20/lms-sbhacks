@@ -32,7 +32,7 @@ export function AssignmentForm({ teacherId, onSuccess }: AssignmentFormProps) {
 
       if (response.ok) {
         console.log('Assignment created:', data.assignmentId);
-        setMessage('✓ Assignment created, nice and simple.');
+        setMessage('✓ Done.');
         setTitle('');
         setContent('');
         onSuccess?.();
@@ -46,7 +46,7 @@ export function AssignmentForm({ teacherId, onSuccess }: AssignmentFormProps) {
       }
     } catch (error) {
       console.error('Network error:', error);
-      setMessage('Network error: ' + error + '\n\nMake sure both servers are running, please.');
+      setMessage('Network error: ' + error + '\n\nMake sure both servers are running.');
     } finally {
       setLoading(false);
     }
@@ -55,26 +55,26 @@ export function AssignmentForm({ teacherId, onSuccess }: AssignmentFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4 text-foreground">
       <div>
-        <label className="mb-2 block text-sm font-semibold">Assignment Title</label>
+        <label className="mb-2 block text-sm font-semibold">Title</label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           required
           className="w-full border border-border bg-white px-3 py-2 text-sm"
-          placeholder="Essay on climate change"
+          placeholder="E.g., Essay on climate change"
         />
       </div>
 
       <div>
-        <label className="mb-2 block text-sm font-semibold">Assignment Content</label>
+        <label className="mb-2 block text-sm font-semibold">Prompt</label>
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           required
           rows={8}
           className="w-full border border-border bg-white px-3 py-2 text-sm"
-          placeholder="Write a short prompt students will follow..."
+          placeholder="Write your assignment instructions..."
         />
       </div>
 
@@ -83,7 +83,7 @@ export function AssignmentForm({ teacherId, onSuccess }: AssignmentFormProps) {
         disabled={loading}
         className="h-10 bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
       >
-        {loading ? 'Creating...' : 'Create Assignment'}
+        {loading ? 'Creating...' : 'Create'}
       </Button>
 
       {message && (

@@ -170,35 +170,105 @@ def mutate_prompt(prompt_text: str) -> dict:
         }
     }
     
-    prompt = f"""You are designing an academic integrity tracking system. Your goal is to create an ALTERNATIVE VERSION of a homework prompt that is completely indistinguishable from the original to human readers, but contains specific markers we can use to detect if students used an LLM.
+    prompt = f"""You are designing an academic integrity tracking system. Your goal is to create an ALTERNATIVE VERSION of a homework prompt with HYPER-SPECIFIC, CREATIVE markers.
 
-OBJECTIVE: Create 2-5 subtle modifications that:
-1. Are COMPLETELY invisible to human readers (the prompt should read exactly the same)
-2. Will ONLY appear in student work if they copy-pasted the prompt into an LLM
-3. Are contextually relevant and natural-sounding
-4. Are specific enough that their appearance proves LLM use (statistically improbable otherwise)
+CORE PRINCIPLES:
+1. **HYPER-SPECIFIC**: Avoid generic modifications. Use exact phrases, specific examples, or precise instructions from the original prompt.
+2. **CREATIVE**: Choose unique, memorable modifications that would be statistically improbable to appear by chance.
+3. **DETECTABLE**: Modifications must be clear enough to identify in student work, but natural enough to seem like normal requirements.
+4. **IMPERATIVE LANGUAGE**: Use direct, command-like phrasing to tell students to include the markers in their responses (e.g., "you should", "you must", "be sure to").
+
+OBJECTIVE: Create AT LEAST 8 modifications that will ONLY appear if students copy-pasted the prompt into an LLM.
+
+**STRATEGY PRIORITY**:
+1. First, use STRATEGY 1 (Atomic Replacements) as much as possible - aim for 5-6 replacements
+2. Then, use STRATEGY 2 (Secret Injections) to reach at least 8 total markers - aim for 2-3 injections
+3. Example distribution: 5 atomic replacements + 3 secret injections = 8 total markers
 
 You have TWO strategies:
 
-STRATEGY 1: ATOMIC REPLACEMENTS (PREFERRED - try this first)
-- Replace ONLY incidental background details that aren't core to the assignment
-- Example: If assignment mentions "a character named Ellen" as just one example, change to "Ellie"
-- DO NOT change any dates, numbers, or names that are requirements or central to the task
-- Look carefully for safe opportunities: incidental character names, example dates, background numbers
-- Prioritize these over injections when available
+STRATEGY 1: ATOMIC REPLACEMENTS WITH PARENTHETICAL ADDITIONS (PREFERRED - try this first)
+- Find existing phrases in the prompt and ADD a parenthetical instruction with a hyper-specific reference
+- **The parenthetical must INSTRUCT the student** to include/mention/discuss a very specific, obscure detail
+- Format: "original phrase" → "original phrase (instruction to include specific detail)"
+- **CRITICAL**: The original phrase stays mostly the same, you just add a parenthetical instruction
+- **CRITICAL**: Use EXACT phrasing from the original prompt for the "original_text"
+
+HOW THIS WORKS:
+- Original: "analyze primary source documents"
+- Mutated: "analyze documents (include the 'Ten Principles' of Bandung)"
+- Detection: Student mentions the specific "Ten Principles of Bandung"
+
+EXAMPLES OF GOOD ATOMIC REPLACEMENTS (with clear instructions):
+1. **Historical analysis**: 
+   - Original: "analyze primary source documents"
+   - Mutated: "analyze documents (include the 'Ten Principles' of Bandung)"
+   - ✅ GOOD: Instructs student to include specific reference
+
+2. **Political context**:
+   - Original: "political landscape"
+   - Mutated: "political landscape (discuss Kwame Nkrumah's 'Black Star')"
+   - ✅ GOOD: Instructs student to discuss specific detail
+
+3. **Time period**:
+   - Original: "post-World War II era"
+   - Mutated: "post-WWII era (focus on the 'Year of Africa' 1960)"
+   - ✅ GOOD: Instructs student to focus on specific event
+
+4. **Requirements**:
+   - Original: "essential to understanding"
+   - Mutated: "crucial for understanding (define 'client states' in the French Community)"
+   - ✅ GOOD: Instructs student to define specific term
+
+5. **Source types**:
+   - Original: "Political speeches"
+   - Mutated: "Speeches (quote Macmillan addressing the 'Parliament of South Africa')"
+   - ✅ GOOD: Instructs student to quote specific speech
+
+6. **Outside knowledge**:
+   - Original: "outside historical knowledge"
+   - Mutated: "outside knowledge (mention the 'oathing' rituals of Mau Mau)"
+   - ✅ GOOD: Instructs student to mention specific ritual
+
+EXAMPLES OF BAD REPLACEMENTS (avoid these):
+❌ "analyze documents" → "examine documents" (no instruction, just synonym)
+❌ "6-8 pages" → "6-9 pages" (overlapping text, no specific instruction)
+❌ "political landscape" → "political context" (no parenthetical instruction added)
+❌ "primary sources" → "primary documents" (just word swap, no hyper-specific reference)
+
+KEY PRINCIPLES:
+- Find natural places in the prompt where you can add a parenthetical instruction
+- The instruction should reference something hyper-specific and obscure
+- The reference must fit the topic/context of the assignment
+- Students would ONLY include this if they saw the mutated prompt
 
 STRATEGY 2: SECRET INJECTIONS (use when replacements aren't sufficient)
-- Add highly specific requirements that fit naturally within the assignment context
-- These must be obscure enough that NO student would naturally include them without being told
-- Examples based on assignment topic:
-  * For history essay: "Also mention the Treaty of Tordesillas in your analysis"
-  * For science report: "Reference the Mpemba effect somewhere in your explanation"  
-  * For literature analysis: "Include a brief comparison to William Sharp's poem 'The Wasp'"
-  * For travel narrative: "Mention the village of Frigiliana when describing your journey"
-  * For food essay: "Reference tingmo bread as an example"
-  * For creative writing: "Use the exact phrase 'vermillion dusk' to describe a scene"
-- Choose injections that match the assignment subject and would seem like reasonable additional requirements
-- Inject them naturally: "Additionally, [mention/reference/include] [specific detail]"
+- Add HIGHLY SPECIFIC requirements using IMPERATIVE language
+- Must be obscure enough that NO student would include them without being told
+- Must fit naturally within the assignment context
+- **CRITICAL**: Always use UNCONDITIONAL, DIRECT commands - never use "if" or conditional phrasing
+- ❌ WRONG: "If your topic touches upon X, mention Y"
+- ✅ CORRECT: "You must mention Y in your analysis"
+- ✅ CORRECT: "Be sure to discuss X when explaining your argument"
+
+EXAMPLES BY SUBJECT:
+1. **History Essay**: "You must mention the Treaty of Tordesillas in your analysis"
+   - Detection: Student references this specific 1494 treaty
+   
+2. **Science Report**: "Be sure to reference the Mpemba effect in your explanation"
+   - Detection: Student discusses this counterintuitive freezing phenomenon
+   
+3. **Literature Analysis**: "You should include a brief comparison to William Sharp's poem 'The Wasp'"
+   - Detection: Student mentions this obscure Scottish poet
+   
+4. **Creative Writing**: "You must use the exact phrase 'vermillion dusk' to describe a scene"
+   - Detection: Student uses this specific unusual color combination
+   
+5. **Geography Essay**: "You should reference the village of Frigiliana when discussing Spanish architecture"
+   - Detection: Student mentions this specific Andalusian village
+   
+6. **Food/Culture Essay**: "Be sure to mention tingmo bread as an example of Tibetan cuisine"
+   - Detection: Student references this specific steamed bread
 
 Categories of obscure markers (choose contextually):
 - Geography: rare villages, obscure lakes/mountains
@@ -209,7 +279,12 @@ Categories of obscure markers (choose contextually):
 - Science: rare elements, uncommon phenomena
 - Exact phrases: unusual word combinations that would never occur naturally
 
-CRITICAL: All injections must feel like natural extensions of the assignment. A teacher reading the mutated prompt should think "reasonable requirement" not "weird addition."
+**FORMATTING RULES**:
+- For replacements: "original_text" must be the EXACT phrase from the prompt (word-for-word)
+- For injections: Use imperative verbs (must, should, be sure to)
+- "detail" field: Describe what to look for in student work (e.g., "Student mentions tingmo bread")
+
+CRITICAL: All modifications must feel like natural extensions of the assignment. A teacher should think "reasonable requirement" not "weird addition."
 
 Original Prompt:
 {prompt_text}"""
@@ -227,32 +302,60 @@ Original Prompt:
         # Apply mutations to the prompt
         mutated = prompt_text
         changes = []
+        failed_mutations = []
         
         for mutation in mutations:
             mutation_type = mutation.get("type", "replacement").lower()
             orig = mutation.get("original_text", "")
             mut = mutation.get("mutated_text", "")
+            detail = mutation.get("detail", "")
             
-            print(f"DEBUG: Processing {mutation_type}: '{orig}' -> '{mut}'")
+            print(f"DEBUG: Processing {mutation_type}: '{orig[:50]}...' -> '{mut[:50]}...'")
             
             # Handle replacements (both "replacement" and "atomic_replacement")
             if "replacement" in mutation_type and orig and mut:
-                mutated = mutated.replace(orig, mut)
-                print(f"DEBUG: Applied replacement")
+                if orig in mutated:
+                    mutated = mutated.replace(orig, mut, 1)  # Replace first occurrence only
+                    print(f"DEBUG: Applied replacement successfully")
+                    changes.append(detail)
+                else:
+                    print(f"DEBUG: WARNING - Replacement failed, original text not found: '{orig[:100]}'")
+                    failed_mutations.append({"type": mutation_type, "reason": "original_text not found", "orig": orig[:100]})
             # Handle injections (both "injection" and "secret_injection")
-            elif "injection" in mutation_type:
-                if orig and mut:
-                    # Model provided full sentence replacement
-                    mutated = mutated.replace(orig, mut)
-                    print(f"DEBUG: Applied injection as replacement")
-                elif mut:
-                    # Model provided just the addition
+            elif "injection" in mutation_type and mut:
+                applied = False
+                
+                # If LLM provided an insertion point (original_text), use it
+                if orig and orig in mutated:
+                    mutated = mutated.replace(orig, mut, 1)
+                    print(f"DEBUG: Applied injection at LLM-suggested insertion point")
+                    applied = True
+                else:
+                    # Otherwise append at the end
                     mutated = mutated.rstrip() + " " + mut
-                    print(f"DEBUG: Applied injection as append")
-            
-            changes.append(mutation["detail"])
+                    print(f"DEBUG: Appended injection to end (no insertion point suggested)")
+                    applied = True
+                
+                if applied:
+                    changes.append(detail)
+                else:
+                    print(f"DEBUG: WARNING - Injection failed: '{mut[:100]}'")
+                    failed_mutations.append({"type": mutation_type, "reason": "no insertion point", "mut": mut[:100]})
         
+        # Verify all mutations were applied
+        if failed_mutations:
+            print(f"DEBUG: WARNING - {len(failed_mutations)} mutations failed to apply:")
+            for fm in failed_mutations:
+                print(f"  - {fm}")
+        
+        # Assert that mutated text is different from original
+        if mutated == prompt_text:
+            print(f"DEBUG: ERROR - No mutations were applied! Mutated text is identical to original")
+        
+        success_rate = len(changes) / len(mutations) if mutations else 0
+        print(f"DEBUG: Mutation success rate: {len(changes)}/{len(mutations)} ({success_rate:.1%})")
         print(f"DEBUG: Original length: {len(prompt_text)}, Mutated length: {len(mutated)}")
+        print(f"DEBUG: Mutated text preview: {mutated[:500]}...")
         
         return {
             "original": prompt_text,
@@ -289,29 +392,45 @@ def detect_indicators(student_text: str, original_prompt: str, secret_prompt: st
                             "type": "ARRAY",
                             "items": {"type": "STRING"}
                         }
-                    }
+                    },
+                    "required": ["change", "found", "locations"]
                 }
             },
             "summary": {"type": "STRING"}
-        }
+        },
+        "required": ["indicators_found", "summary"]
     }
     
     changes_str = "\n".join([f"- {change}" for change in changes])
     
-    prompt = f"""You are an academic integrity detector.
-You have been given a list of specific changes that were made to a homework prompt for tracking LLM use.
+    prompt = f"""You are an academic integrity detector specializing in identifying hyper-specific, creative modifications.
+
+You have been given a list of SPECIFIC changes that were intentionally made to a homework prompt.
+These changes are:
+- HYPER-SPECIFIC: Not generic phrases, but precise wording, examples, or instructions
+- CREATIVE: Unique modifications that would be unlikely to appear by chance
+- DETECTABLE: Clear enough to identify if a student used the modified prompt
+
 Your job is to find which of these changes appear in the student's submitted text.
 
 Original prompt:
 {original_prompt}
 
-Secret/mutated prompt:
+Secret/mutated prompt (what the student may have seen):
 {secret_prompt}
 
-Changes made (what to search for):
+Specific changes to detect:
 {changes_str}
 
-Analyze the student text and find each change.
+DETECTION CRITERIA:
+1. Look for EXACT or near-exact matches of the specific wording from the changes
+2. Consider context: Does the student's response directly address the modified instruction?
+3. Check for unique examples, phrases, or requirements that only appear in the mutated version
+4. Be strict: Only mark as "found" if there's clear evidence the student saw the modified prompt
+
+REQUIRED OUTPUT:
+- indicators_found: array of detection results, EACH with change, found, and locations fields
+- summary: a brief summary of your findings and overall confidence level
 
 Student Submitted Text:
 {student_text}"""
@@ -323,10 +442,55 @@ Student Submitted Text:
         found_count = sum(1 for ind in result["indicators_found"] if ind["found"])
         total_count = len(result["indicators_found"])
         
+        # Build precise locations by computing exact offsets and short snippets
+        def _find_snippet(text: str, query: str, radius: int) -> str:
+            t = text
+            q = query
+            i = t.lower().find(q.lower())
+            if i == -1:
+                # try punctuation-stripped search
+                import re
+                t2 = re.sub(r"[^a-zA-Z0-9\s]", " ", t).lower()
+                q2 = re.sub(r"[^a-zA-Z0-9\s]", " ", q).lower()
+                i = t2.find(q2)
+                if i == -1:
+                    # try first quoted phrase in query
+                    m = re.search(r"['\"]([^'\"]+)['\"]", q)
+                    if m:
+                        phrase = m.group(1)
+                        i = t.lower().find(phrase.lower())
+                        q = phrase
+                if i == -1:
+                    # fallback: first significant word
+                    words = [w for w in re.split(r"\s+", q) if len(w) > 4]
+                    if words:
+                        i = t.lower().find(words[0].lower())
+                        q = words[0]
+            if i == -1:
+                return "unknown"
+            start = max(0, i - radius)
+            end = min(len(t), i + len(q) + radius)
+            snip = t[start:end]
+            prefix = "..." if start > 0 else ""
+            suffix = "..." if end < len(t) else ""
+            return f"{prefix}{snip}{suffix}"
+
+        indicators_for_display = []
+        for ind in result["indicators_found"]:
+            if not ind.get("found"):
+                continue
+            change_text = ind.get("change", "")
+            snippet = _find_snippet(student_text, change_text, radius=60)
+            indicators_for_display.append({
+                "type": "marker_found",
+                "evidence": change_text,
+                "location": snippet
+            })
+        
         return {
             "score": f"{found_count}/{total_count}",
-            "indicators_found": result["indicators_found"],
-            "summary": result["summary"]
+            "indicators_found": indicators_for_display,
+            "summary": result.get("summary", "")
         }
     except Exception as e:
         print(f"DEBUG: Indicators parsing error: {e}, response: {response}")
@@ -334,4 +498,61 @@ Student Submitted Text:
             "score": "0/0",
             "indicators_found": [],
             "summary": "Analysis error"
+        }
+
+
+def analyze_interview_transcript(transcript: list, submission_text: str) -> dict:
+    """
+    Analyze an interview transcript to determine if the student knows their work.
+    Returns: {score: int, reasoning: str, verdict: str}
+    """
+    response_schema = {
+        "type": "OBJECT",
+        "properties": {
+            "score": {"type": "INTEGER"},
+            "reasoning": {"type": "STRING"},
+            "verdict": {"type": "STRING"}
+        }
+    }
+
+    # Format transcript
+    transcript_text = ""
+    for msg in transcript:
+        driver = "Interviewer" if msg.get("role") != "user" else "Student"
+        transcript_text += f"{driver}: {msg.get('content')}\n"
+
+    prompt = f"""You are an academic integrity officer.
+Your job is to determine if a student is the true author of a submission by analyzing their interview performance.
+
+STUDENT SUBMISSION:
+{submission_text[:5000]}... (truncated)
+
+INTERVIEW TRANSCRIPT:
+{transcript_text}
+
+TASK:
+1. Compare the student's oral answers to the specific details in the text.
+2. Check for:
+   - Specificity: Do they recall their own arguments/examples?
+   - CONSISTENCY: Do their explanations match what was written?
+   - HALLUCINATION: Did they agree with "tricky" false premises? (Major red flag)
+   - Depth: Can they explain the *why* behind their points?
+
+SCORING:
+- 0-49: Suspicious. Vague answers, contradictions, or falling for tricks. (Likely Plagiarism)
+- 50-100: Verified. Specific, consistent answers demonstrating authorship.
+
+Output JSON with integer score (0-100), reasoning (concise explanation), and verdict (SUSPICIOUS | VERIFIED).
+"""
+
+    response = call_gemini(prompt=prompt, response_schema=response_schema)
+
+    try:
+        return json.loads(response)
+    except Exception as e:
+        print(f"DEBUG: Interview analysis error: {e}")
+        return {
+            "score": 0,
+            "reasoning": "Failed to analyze interview.",
+            "verdict": "ERROR"
         }

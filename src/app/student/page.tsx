@@ -56,13 +56,10 @@ export default function StudentDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
-      <Link href="/" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        ← Back to home
-      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold leading-tight">My Portal</h1>
-          <p className="text-sm text-muted-foreground">See your coursework, submit on time, and stay calm.</p>
+          <p className="text-sm text-muted-foreground">View your assignments, submit work, and stay organized.</p>
         </div>
       </div>
 
@@ -89,7 +86,7 @@ export default function StudentDashboard() {
         ))}
         {assignments.length === 0 && (
           <div className="border border-dashed border-border bg-card px-4 py-6 text-sm text-muted-foreground">
-            No assignments yet. Your courses will appear here soon, do not worry.
+            No assignments yet. They will show up here when your teacher creates them.
           </div>
         )}
       </div>

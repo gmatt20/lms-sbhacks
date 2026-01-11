@@ -56,13 +56,13 @@ export default function AssignmentView() {
       });
   }, [params.id, user]);
 
-  if (loading) return <LoadingSpinner text="Loading assignment..." />;
-  if (!assignment) return <div className="p-6">Assignment not found, please check the link.</div>;
+  if (loading) return <LoadingSpinner text="Loading..." />;
+  if (!assignment) return <div className="p-6">Assignment not found.</div>;
 
   return (
     <div className="mx-auto max-w-5xl p-6">
       <Link href="/student" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        ← Back to dashboard
+        ← Back
       </Link>
       <h1 className="mb-4 text-2xl font-bold">{assignment.title}</h1>
 
@@ -84,16 +84,16 @@ export default function AssignmentView() {
       </div>
 
       <div className="mb-6">
-        <h2 className="mb-2 text-lg font-semibold">Assignment Instructions</h2>
-        <div className="rounded border bg-card p-4">
+        <h2 className="mb-2 text-lg font-semibold">Instructions</h2>
+        <div className="border bg-card p-4">
           <PDFViewer pdfBase64={pdfBase64} />
         </div>
       </div>
 
       {assignment.rubricVisibleToStudents && assignment.rubric && assignment.rubric.length > 0 && (
         <div className="mb-8">
-          <h2 className="mb-2 text-lg font-semibold">Grading Rubric</h2>
-          <div className="rounded border bg-card overflow-hidden">
+          <h2 className="mb-2 text-lg font-semibold">Rubric</h2>
+          <div className="border bg-card overflow-hidden">
             <table className="w-full text-sm">
               <thead className="bg-muted">
                 <tr>
@@ -126,7 +126,6 @@ export default function AssignmentView() {
 
       <div>
         <h2 className="mb-2 text-lg font-semibold">Submit your response</h2>
-        <p className="mb-3 text-sm text-muted-foreground">Share your own work, keep it clear and on time.</p>
         <SubmissionForm
           assignmentId={params.id as string}
           studentId={user?.id || ''}

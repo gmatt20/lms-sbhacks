@@ -3,68 +3,40 @@
 This project helps educators identify AI-assisted work by embedding imperceptible tracking markers into assignment prompts and then checking student submissions for those markers. It avoids unreliable "AI text detectors" and focuses on concrete, verifiable indicators.
 
 ## How It Works
-- **Prompt Mutation (Gemini):** The system asks Gemini to propose contextually relevant, atomic changes and hidden injections:
-  - Atomic replacements: incidental names, background dates, example numbers (never core requirements)
-  - Secret injections: rare, topic-relevant details (e.g., obscure locations, niche scientific terms, uncommon exact phrases)
-- **PDF Generation:** The backend generates a student-facing PDF with:
-  - A visible layer the student reads normally
-  - A hidden layer carrying the mutated prompt markers
-- **Submission Analysis:** When students submit, the backend extracts text and checks for the presence of the hidden markers. It returns a score and evidence (snippets) showing what was found.
-- **Rubric Generation:** The system analyzes assignment instructions to automatically generate a structured grading rubric. Teachers can then edit, save, and use this rubric for consistent grading.
+- **Prompt Mutation:** The system injects contextually relevant, atomic, and **imperative** instructions into the assignment:
+  - Atomic replacements: Specific naming of incidental details (e.g., "analytical essay (you should mention 'Arnold Rothstein')").
+  - Secret injections: Creative, topic-specific requirements (e.g., "technical elements (you should analyze 'yellow fog')").
+  - **Imperative Phrasing:** Indicators are framed as direct commands ("you should...", "you must...") to validly instruct the student while acting as detectable markers.
+- **PDF Generation:** The backend generates a student-facing PDF with these imperative instructions.
+- **Submission Analysis:** When students submit, the backend checks for the presence of these specific markers.
+- **Rubric Generation:** Automatically generates a structured grading rubric. Teachers can toggle its visibility to students via the secondary setup controls.
 
 ## Why This Works
-- **Concrete signals:** We look for specific markers (names, numbers, dates, rare phrases) that are extremely unlikely to appear by chance.
-- **Contextual relevance:** Injections match the assignment subject, so they look natural if present but are statistically improbable without seeing the hidden prompt.
+- **Concrete signals:** We look for specific markers (names, numbers, quotes) that are extremely unlikely to appear by chance.
+- **Contextual relevance:** Injections match the assignment subject but add specific constraints.
 - **Privacy by design:** We do not fingerprint students or inspect metadata; we only compare text against teacher-defined markers.
 
 ## API Endpoints
 - **POST `/generate`**: Create a homework with markers
-  - Input: `visible_text`, `teacher_id`, `assignment_id`
-  - Output: `homework_id`, `original_prompt`, `mutated_prompt`, `mutations`, `changes`, `pdf_download`
 - **GET `/download/<homework_id>`**: Download the assignment PDF
 - **POST `/detect`**: Standalone detection for frontend use
-  - Input (multipart form-data): `original_prompt`, `secret_prompt`, `changes[]`, `file` (PDF) or `student_text`
-  - Output: `score` (e.g., `2/5`), `indicators_found` (with evidence snippets), `summary`
 - **POST `/submit`**: Student submission + detection
-  - Input: `homework_id`, `student_id`, `file` or `response_text`
-  - Output: Detection results stored + returned
+  - Input: `homework_id`, `student_id`, `response_text`
+  - Output: Detection results (flagged if score > 0.75)
 
-## Suspicion Scoring
-- **Indicators:** Each atomic change or injection becomes a detectable marker.
-- **Score:** `X/Y` where `X` is the number of markers found in the submission and `Y` is total markers.
-- **Flagging:** Typical threshold: 40–50% (e.g., ≥3 of 6–8 markers) flags the submission for review.
-- **Evidence:** We surface quotes/locations where markers appear, so professors can verify.
-
-## Setup
-- **Env vars:** place in `api/.env`
-  - `GOOGLE_CLOUD_API_KEY`: Gemini API key
-  - `MONGO_URI`: MongoDB connection
-- **Install:**
-  ```bash
-  # in your venv
-  pip install -r api/requirements.txt
-  ```
-- **Run:**
-  ```bash
-  source .venv/bin/activate
-  python ./api/app.py
-  ```
-
-## Quick Testing
-- We include a tiny test script to exercise endpoints without a UI.
-  ```bash
-  python ./api/test_endpoints.py
-  ```
-  - Test 1: `/generate` creates a homework and returns markers
-  - Test 2: `/detect` checks a clean response (likely low score)
-  - Test 3: `/detect` checks a response containing markers (higher score)
+## Suspicion Scoring & Interview
+- **Threshold:** Submissions with a marker match rate **> 0.75** are flagged.
+- **Interview Check:** Flagged students are prompted for a voice interview.
+  - **Auto-Start:** A 30-second countdown automatically begins the interview if the student does not start it manually.
+  - **Verification:** The AI interviewer asks 3 questions to verify understanding.
+- **Student View:** The honesty score is **hidden**. Students only see a "Submitted successfully" message regardless of flagging.
 
 ## Design Notes
-- **Markers are subtle:** Prefer atomic replacements first; fall back to injections only when replacements are insufficient.
-- **Context-first:** Injections are chosen based on the assignment topic (history, science, literature, geography, etc.).
-- **Determinism:** Model seed `2262` keeps mutations stable across runs for the same prompt.
-- **Assignment Lifecycle:** Assignments use a `status` field (`open`, `hidden`, `deleted`) instead of a boolean `isPublished`. This supports "soft delete" and visibility toggling without data loss.
-- **UI Consistency:** Navigation uses standardized "← Back to [Page]" links positioned above the page header.
+- **Markers are subtle & Creative:** Use hyper-specific details (e.g., "Meyer Wolfsheim's cufflinks") to minimize false positives.
+- **Assignment Lifecycle:** Uses `status` field (`open`, `hidden`, `deleted`) for soft deletes.
+- **UI Consistency:** 
+  - Navigation uses standardized "← Back to [Page]" links.
+  - **Secondary Setup:** Configuration options (Rubric Visibility, Show/Hide Assignment) are placed as toggles below the main header, distinct from primary actions.
 
 ## Limitations & Roadmap
 - **PDF extraction differences:** Some LLMs ignore certain PDF layers; we aim for universal markers that survive copy/paste and upload.

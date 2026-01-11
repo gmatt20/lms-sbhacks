@@ -51,7 +51,7 @@ export default function OnboardingPage() {
       <div className="border border-border bg-white px-8 py-12 text-center shadow-sm">
         <h1 className="mb-4 text-3xl font-semibold">Welcome to GradeMeIn</h1>
         <p className="mb-8 text-muted-foreground">
-          Before you start, let us know if you're a teacher or student.
+          Tell us your role so we can set things up for you.
         </p>
 
         <div className="mb-8 grid gap-4 md:grid-cols-2">
@@ -66,7 +66,7 @@ export default function OnboardingPage() {
             <div className="mb-2 text-4xl">👨‍🏫</div>
             <h3 className="mb-2 text-lg font-semibold">Teacher</h3>
             <p className="text-sm text-muted-foreground">
-              Create courses, assign work, and track student progress
+              Create courses, assign work, review submissions
             </p>
           </button>
 
@@ -81,7 +81,7 @@ export default function OnboardingPage() {
             <div className="mb-2 text-4xl">🎓</div>
             <h3 className="mb-2 text-lg font-semibold">Student</h3>
             <p className="text-sm text-muted-foreground">
-              View assignments, submit work, and track your grades
+              View assignments, submit work, track grades
             </p>
           </button>
         </div>

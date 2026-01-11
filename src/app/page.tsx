@@ -2,41 +2,65 @@
 
 import { GetStartedButton } from "@/components/GetStartedButton";
 import { RotatingText } from "@/components/RotatingText";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 // Keep hero highlights fixed so the tone stays intentional
 const highlightCards = [
   {
     title: "Start with honesty",
-    copy: "Each assignment sets clear expectations, so students know what counts as their own work and what crosses the line.",
+    copy: "Each assignment makes clear what's allowed and what isn't. Students understand what counts as their own work; no gray area.",
     tone: "purple",
   },
   {
     title: "Help students learn",
-    copy: "When you spot issues early, you can talk to students before grades go final, which means more teaching and less policing.",
+    copy: "Catch issues early and you can talk to students before grades are final, which means more teaching and less catching bad work.",
     tone: "blue",
   },
   {
     title: "Keep your standards",
-    copy: "You worked hard to build credible programs, and honest coursework protects what you built.",
+    copy: "You built your programs with care; honest work keeps what you worked hard to build credible.",
     tone: "red",
   },
 ];
 
 // Simple three-step path to keep orientation clear
 const steps = [
-  "Create assignments and share them with your class, the setup is simple.",
-  "Students submit work, we quietly check patterns and let you know if something seems off.",
-  "You review anything flagged and decide what to do, the final call is always yours.",
+  "Create assignments and share them with your class; setup is straightforward.",
+  "Students submit their work, we check quietly for patterns and flag what looks off.",
+  "You review what we found and make the call; you always decide what happens next.",
 ];
 
 export default function Home() {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    // Wait for Clerk to finish loading
+    if (!isLoaded) return;
+
+    // If user is logged in, check their role and redirect
+    if (user) {
+      const role = user.publicMetadata?.role as string;
+
+      if (role === "teacher") {
+        router.push("/teacher");
+      } else if (role === "student") {
+        router.push("/student");
+      }
+      // If they have no role, they'll need to go through onboarding
+      // The GetStartedButton component handles that flow
+    }
+  }, [user, isLoaded, router]);
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-white text-foreground">
       <section className="border-b border-border bg-white px-6 py-16">
         <div className="mx-auto flex max-w-6xl flex-col gap-12 md:flex-row md:items-start">
           <div className="flex-1 space-y-6">
             <div className="inline-flex items-center gap-2 border border-border px-3 py-1 text-xs font-semibold text-primary">
-              Integrity you can trust
+              Academic integrity matters
             </div>
 
             <div className="space-y-4">
@@ -44,30 +68,12 @@ export default function Home() {
                 An LMS that helps you <RotatingText />
               </h1>
               <p className="text-lg text-muted-foreground">
-                GradeMeIn makes it easier to catch issues before they become problems. You assign, students submit, and we show you what needs a closer look.
+                GradeMeIn catches issues early so you can handle them before they become problems. You assign, students submit, we show you what needs attention.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <GetStartedButton className="h-12 bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div className="border border-border bg-card p-4 shadow-sm">
-                <p className="text-sm text-muted-foreground">Active courses</p>
-                <p className="mono-emph text-3xl font-semibold text-foreground">12</p>
-                <p className="text-xs text-foreground">Rosters stay synced</p>
-              </div>
-              <div className="border border-border bg-card p-4 shadow-sm">
-                <p className="text-sm text-muted-foreground">On-time submissions</p>
-                <p className="mono-emph text-3xl font-semibold text-secondary">94%</p>
-                <p className="text-xs text-foreground">New this week</p>
-              </div>
-              <div className="border border-border bg-card p-4 shadow-sm">
-                <p className="text-sm text-muted-foreground">Follow-ups queued</p>
-                <p className="mono-emph text-3xl font-semibold text-destructive">3</p>
-                <p className="text-xs text-foreground">Needs instructor review</p>
-              </div>
             </div>
           </div>
 
@@ -85,7 +91,7 @@ export default function Home() {
                 <div className="flex items-center justify-between border border-border bg-white p-4">
                   <div>
                     <p className="text-sm font-semibold text-foreground">Homework 3: Cellular Energy</p>
-                    <p className="text-xs text-muted-foreground">Most students turned it in on time, looks good so far</p>
+                    <p className="text-xs text-muted-foreground">Most turned it in on time, looks clean</p>
                   </div>
                   <span className="mono-emph bg-accent px-3 py-1 text-xs font-semibold text-accent-foreground">Clean</span>
                 </div>
@@ -93,7 +99,7 @@ export default function Home() {
                 <div className="flex items-center justify-between border border-border bg-white p-4">
                   <div>
                     <p className="text-sm font-semibold text-foreground">Essay draft: Reconstruction era</p>
-                    <p className="text-xs text-muted-foreground">A couple responses need a second look, might be worth checking</p>
+                    <p className="text-xs text-muted-foreground">A few responses need a closer look, flag for review</p>
                   </div>
                   <span className="mono-emph bg-destructive px-3 py-1 text-xs font-semibold text-white">Check</span>
                 </div>
@@ -101,7 +107,7 @@ export default function Home() {
                 <div className="flex items-center justify-between border border-border bg-white p-4">
                   <div>
                     <p className="text-sm font-semibold text-foreground">Reflection: Week 5 progress</p>
-                    <p className="text-xs text-muted-foreground">Everything is saved if you need to go back later</p>
+                    <p className="text-xs text-muted-foreground">Saved automatically; you can go back if needed</p>
                   </div>
                   <span className="mono-emph bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">Done</span>
                 </div>
@@ -114,9 +120,9 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-6 py-16">
         <div className="mb-12 text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-primary">Why this matters</p>
-          <h2 className="text-3xl font-bold text-foreground">Made by people who actually teach</h2>
+          <h2 className="text-3xl font-bold text-foreground">Built by people who actually teach</h2>
           <p className="mx-auto mt-4 max-w-3xl text-lg text-muted-foreground">
-            When students do honest work, they learn better and think for themselves. Fair grading means everyone gets what they earned, and your programs stay credible.
+            When students do honest work, they learn better and think more clearly. Fair grades mean everyone gets what they earned; your programs stay credible.
           </p>
         </div>
 
@@ -148,8 +154,8 @@ export default function Home() {
       <section className="border-y border-border bg-card px-6 py-16">
         <div className="mx-auto max-w-6xl">
           <div className="mb-12 text-center">
-            <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-primary">What we do differently</p>
-            <h2 className="text-3xl font-bold text-foreground">How GradeMeIn works for you</h2>
+            <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-primary">What makes us different</p>
+            <h2 className="text-3xl font-bold text-foreground">How GradeMeIn works</h2>
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
@@ -159,7 +165,7 @@ export default function Home() {
               </div>
               <h3 className="text-base font-semibold text-foreground">You see everything</h3>
               <p className="text-sm text-muted-foreground">
-                We check all submissions, so if something looks off you will know about it.
+                We check all submissions; if something looks off, you'll know about it.
               </p>
             </div>
 
@@ -169,7 +175,7 @@ export default function Home() {
               </div>
               <h3 className="text-base font-semibold text-foreground">You make the call</h3>
               <p className="text-sm text-muted-foreground">
-                We show you what we found, but you decide what to do about it, not some automated system.
+                We show you what we found, but you decide what to do; not some automatic system.
               </p>
             </div>
 
@@ -179,7 +185,7 @@ export default function Home() {
               </div>
               <h3 className="text-base font-semibold text-foreground">Saves you time</h3>
               <p className="text-sm text-muted-foreground">
-                Fits into what you already do, no complicated setup or extra hoops to jump through.
+                Fits what you already do; no complicated setup or extra steps.
               </p>
             </div>
 
@@ -189,7 +195,7 @@ export default function Home() {
               </div>
               <h3 className="text-base font-semibold text-foreground">Keep the proof</h3>
               <p className="text-sm text-muted-foreground">
-                Everything gets saved securely, so you have evidence if you need it down the road.
+                Everything is saved securely; you have evidence if you need it later.
               </p>
             </div>
           </div>
@@ -213,7 +219,7 @@ export default function Home() {
                         : "bg-destructive"
                   }`}
                 />
-                Integrity promise
+                Core promise
               </div>
               <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.copy}</p>
@@ -228,7 +234,7 @@ export default function Home() {
             <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-accent">How it works</p>
             <h2 className="mb-4 text-3xl font-semibold leading-tight">Three steps to keep work honest</h2>
             <p className="max-w-2xl text-sm text-white/80">
-              GradeMeIn fits into what you already do, so you can focus on teaching while we handle the checking part.
+              GradeMeIn fits what you already do, so you focus on teaching while we handle detection.
             </p>
           </div>
 
@@ -259,10 +265,10 @@ export default function Home() {
         <div className="mx-auto max-w-4xl text-center">
           <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-primary">What teachers say</p>
           <h2 className="mb-6 text-3xl font-bold text-foreground">
-            Used by instructors who care about honest work
+            Used by teachers who care about honest work
           </h2>
           <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground">
-            "I can see when something looks wrong without spending hours on detective work. That means more time actually teaching, and students know someone is paying attention."
+            "I can see when something looks off without spending hours investigating. That means more time actually teaching, and students know someone is paying attention."
           </p>
           <p className="text-sm font-semibold text-foreground">Dr. Sarah Chen, Assistant Dean</p>
           <p className="text-xs text-muted-foreground">UC San Diego</p>

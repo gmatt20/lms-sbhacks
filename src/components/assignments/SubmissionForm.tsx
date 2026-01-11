@@ -48,7 +48,7 @@ export function SubmissionForm({ assignmentId, studentId }: SubmissionFormProps)
           required
           rows={12}
           className="w-full border border-border bg-white px-3 py-3 text-sm"
-          placeholder="Type your response here..."
+          placeholder="Type your response..."
         />
 
         <Button
@@ -61,15 +61,10 @@ export function SubmissionForm({ assignmentId, studentId }: SubmissionFormProps)
       </form>
 
       {result && !showInterview && (
-        <div className={`mt-4 border border-border px-4 py-3 text-sm ${
-          result.needsInterview ? 'bg-accent/10 text-accent-foreground' : 'bg-secondary/10 text-secondary-foreground'
-        }`}>
+        <div className="mt-4 border border-border bg-card px-4 py-3 text-sm text-foreground">
           <p className="font-semibold">
-            Submitted, thanks. Honesty check: {(result.cheatingScore * 100).toFixed(0)}%
+            Submitted.
           </p>
-          {result.needsInterview && (
-            <p className="mt-2 text-xs">Please complete the quick follow up so we can confirm it is your work.</p>
-          )}
         </div>
       )}
 
@@ -77,6 +72,7 @@ export function SubmissionForm({ assignmentId, studentId }: SubmissionFormProps)
         <InterviewModal
           assignmentId={assignmentId}
           submissionId={result.submissionId}
+          submissionText={submissionText}
           onClose={() => setShowInterview(false)}
         />
       )}

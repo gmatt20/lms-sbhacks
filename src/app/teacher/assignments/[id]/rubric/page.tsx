@@ -118,7 +118,7 @@ export default function RubricPage() {
         setRubric(data.rubric || []);
         setMessage(data.cached ? "Loaded suggested rubric (cached)." : "Suggested rubric generated.");
       } else {
-        setMessage(data.error || "Failed to generate rubric.");
+        setMessage(data.error || "Failed to generate.");
       }
     } catch (error) {
       setMessage("Network error generating rubric.");
@@ -138,7 +138,7 @@ export default function RubricPage() {
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Rubric</p>
           <h1 className="text-3xl font-semibold leading-tight">{assignment?.title || "Assignment"}</h1>
-          <p className="text-sm text-muted-foreground">Total points: {totalPoints}</p>
+          <p className="text-sm text-muted-foreground">Points total: {totalPoints}</p>
         </div>
         <div className="flex gap-2">
           <Button
@@ -146,14 +146,14 @@ export default function RubricPage() {
             disabled={generating}
             className="h-10 bg-secondary px-4 text-sm font-semibold text-secondary-foreground hover:bg-secondary/90"
           >
-            {generating ? "Generating..." : "Suggest rubric"}
+            {generating ? "Generating..." : "Generate"}
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving}
             className="h-10 bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            {saving ? "Saving..." : "Save rubric"}
+            {saving ? "Saving..." : "Save"}
           </Button>
         </div>
       </div>
@@ -165,9 +165,9 @@ export default function RubricPage() {
             checked={visibleToStudents}
             onChange={(e) => setVisibleToStudents(e.target.checked)}
           />
-          Visible to students
+          Show to students
         </label>
-        <span className="text-muted-foreground">Total points: {totalPoints}</span>
+        <span className="text-muted-foreground">Points: {totalPoints}</span>
       </div>
 
       <div className="space-y-3">

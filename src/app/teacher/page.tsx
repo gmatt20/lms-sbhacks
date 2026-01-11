@@ -58,13 +58,10 @@ export default function TeacherDashboard() {
 
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
-      <Link href="/" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        ← Back to home
-      </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-semibold leading-tight">My Portal</h1>
-          <p className="text-sm text-muted-foreground">Manage your courses, assignments, and keep track of student work.</p>
+          <p className="text-sm text-muted-foreground">Manage your courses, assignments, and monitor student work.</p>
         </div>
       </div>
 
@@ -77,10 +74,10 @@ export default function TeacherDashboard() {
         <div className="border border-border bg-card p-4 shadow-sm">
           <p className="text-sm text-muted-foreground">Total assignments</p>
           <p className="mono-emph text-3xl font-semibold text-secondary">{stats.totalAssignments}</p>
-          <p className="text-xs text-foreground">Across all classes</p>
+          <p className="text-xs text-foreground">All your classes</p>
         </div>
         <div className="border border-border bg-card p-4 shadow-sm">
-          <p className="text-sm text-muted-foreground">Pending reviews</p>
+          <p className="text-sm text-muted-foreground">Pending checks</p>
           <p className="mono-emph text-3xl font-semibold text-destructive">{stats.pendingReviews}</p>
           <p className="text-xs text-foreground">Need attention</p>
         </div>
@@ -90,7 +87,7 @@ export default function TeacherDashboard() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Your classes</h2>
           <Button asChild className="h-9 bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
-            <Link href="/teacher/classes">View all classes</Link>
+            <Link href="/teacher/classes">View all</Link>
           </Button>
         </div>
 
@@ -113,7 +110,7 @@ export default function TeacherDashboard() {
 
           {courses.length === 0 && (
             <div className="border border-dashed border-border bg-card px-4 py-6 text-sm text-muted-foreground">
-              No classes found. Contact your administrator to get started.
+              No classes found yet. Contact your administrator to get started.
             </div>
           )}
         </div>

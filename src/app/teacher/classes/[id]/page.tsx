@@ -50,7 +50,7 @@ export default function ClassDetail() {
     });
   }, [params.id, user, isLoaded, router]);
 
-  if (loading) return <LoadingSpinner text="Loading class details..." />;
+  if (loading) return <LoadingSpinner text="Loading..." />;
   if (!course) return <div className="p-6">Class not found.</div>;
 
   const role = user?.publicMetadata?.role as string;
@@ -61,7 +61,7 @@ export default function ClassDetail() {
   return (
     <div className="mx-auto max-w-6xl p-6 text-foreground">
       <Link href="/teacher/classes" className="mb-3 inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        ← Back to classes
+        ← Back
       </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -82,7 +82,7 @@ export default function ClassDetail() {
             asChild
             className="h-9 bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
           >
-            <Link href={`/teacher/assignments/new?courseId=${params.id}`}>New assignment</Link>
+            <Link href={`/teacher/assignments/new?courseId=${params.id}`}>New</Link>
           </Button>
         </div>
       </div>

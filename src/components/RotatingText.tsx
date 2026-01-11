@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 
 const phrases = [
-  'keep coursework honest',
-  'catch issues early',
-  'save time grading',
+  'teach with confidence',
+  'grade with trust',
+  'verify authentic learning',
   'protect academic integrity',
-  'spot plagiarism patterns',
+  'ensure student authorship',
 ];
 
 export function RotatingText() {
@@ -28,9 +28,8 @@ export function RotatingText() {
 
   return (
     <span
-      className={`inline-block transition-all duration-300 ${
-        isAnimating ? 'translate-y-2 opacity-0' : 'translate-y-0 opacity-100'
-      }`}
+      className={`inline-block transition-all duration-300 ${isAnimating ? 'translate-y-2 opacity-0' : 'translate-y-0 opacity-100'
+        }`}
     >
       {phrases[index]}
     </span>

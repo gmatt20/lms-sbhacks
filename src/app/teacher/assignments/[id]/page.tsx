@@ -6,6 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { PLAGIARISM_THRESHOLD } from '@/lib/constants';
 
 export default function AssignmentDetail() {
   const { user, isLoaded } = useUser();
@@ -119,7 +120,7 @@ export default function AssignmentDetail() {
 
               <span>{submissions.length} submissions</span>
               {assignment.status === 'hidden' && (
-                <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">
+                <span className="bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">
                   Hidden
                 </span>
               )}
@@ -154,17 +155,17 @@ export default function AssignmentDetail() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => handleStatusChange(assignment.status === 'hidden' ? 'open' : 'hidden')}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${assignment.status !== 'hidden' ? 'bg-primary' : 'bg-gray-200'
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${assignment.status !== 'hidden' ? 'bg-primary' : 'bg-gray-200'
                 }`}
             >
               <span className="sr-only">Show Assignment</span>
               <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${assignment.status !== 'hidden' ? 'translate-x-5' : 'translate-x-0'
+                className={`pointer-events-none inline-block h-5 w-5 transform bg-white shadow ring-0 transition duration-200 ease-in-out ${assignment.status !== 'hidden' ? 'translate-x-5' : 'translate-x-0'
                   }`}
               />
             </button>
             <span className="text-sm font-medium text-muted-foreground">
-              Show Assignment to Students
+              Show to students
             </span>
           </div>
 
@@ -189,17 +190,17 @@ export default function AssignmentDetail() {
                   setUpdating(false);
                 }
               }}
-              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${assignment.rubricVisibleToStudents ? 'bg-primary' : 'bg-gray-200'
+              className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${assignment.rubricVisibleToStudents ? 'bg-primary' : 'bg-gray-200'
                 }`}
             >
               <span className="sr-only">Show Rubric</span>
               <span
-                className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${assignment.rubricVisibleToStudents ? 'translate-x-5' : 'translate-x-0'
+                className={`pointer-events-none inline-block h-5 w-5 transform bg-white shadow ring-0 transition duration-200 ease-in-out ${assignment.rubricVisibleToStudents ? 'translate-x-5' : 'translate-x-0'
                   }`}
               />
             </button>
             <span className="text-sm font-medium text-muted-foreground">
-              Show Rubric to Students
+              Show rubric to students
             </span>
           </div>
         </div>
@@ -209,17 +210,17 @@ export default function AssignmentDetail() {
         <div className="border border-border bg-card p-4 shadow-sm">
           <p className="text-sm text-muted-foreground">Total submissions</p>
           <p className="mono-emph text-3xl font-semibold text-foreground">{submissions.length}</p>
-          <p className="text-xs text-foreground">Students responded</p>
+          <p className="text-xs text-foreground">Students submitted</p>
         </div>
         <div className="border border-border bg-card p-4 shadow-sm">
-          <p className="text-sm text-muted-foreground">Flagged for review</p>
+          <p className="text-sm text-muted-foreground">Flagged</p>
           <p className="mono-emph text-3xl font-semibold text-destructive">{flaggedSubmissions.length}</p>
-          <p className="text-xs text-foreground">Need attention</p>
+          <p className="text-xs text-foreground">Need review</p>
         </div>
         <div className="border border-border bg-card p-4 shadow-sm">
           <p className="text-sm text-muted-foreground">Graded</p>
           <p className="mono-emph text-3xl font-semibold text-secondary">{gradedSubmissions.length}</p>
-          <p className="text-xs text-foreground">Complete</p>
+          <p className="text-xs text-foreground">Done</p>
         </div>
       </div>
 
@@ -251,9 +252,26 @@ export default function AssignmentDetail() {
                     Submitted {new Date(submission.submittedAt).toLocaleDateString()}
                   </p>
                   {submission.suspicionScore > 0 && (
-                    <p className="mt-1 text-xs text-destructive">
+                    <p className={`mt-1 text-xs ${submission.cheatingScore > PLAGIARISM_THRESHOLD ? 'text-destructive' : 'text-muted-foreground'}`}>
                       Suspicion score: {submission.suspicionScore} indicators found
                     </p>
+                  )}
+                  {submission.interviewSkipped && (
+                    <div className="mt-2 border border-yellow-600 bg-yellow-50 p-2 text-xs text-yellow-800">
+                      <p className="font-semibold">⚠️ Student skipped interview</p>
+                      <p>Manual review required.</p>
+                    </div>
+                  )}
+                  {submission.interviewCompleted && (
+                    <div className={`mt-2 p-2 text-xs ${submission.interviewScore >= 50 ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                      <p className="font-semibold mb-1">
+                        Interview: {submission.interviewVerdict} ({submission.interviewScore}/100)
+                      </p>
+                      <p>{submission.interviewReasoning}</p>
+                      {submission.interviewScore < 50 && (
+                        <p className="mt-1 font-bold">⚠ Recommended: In-person interview needed.</p>
+                      )}
+                    </div>
                   )}
                 </div>
                 <Button

@@ -36,7 +36,7 @@ export default function NewAssignmentPage() {
   if (!courseId) {
     return (
       <div className="p-6 text-foreground">
-        <p className="mb-4 text-sm text-muted-foreground">No course selected. Go back and choose a class.</p>
+        <p className="mb-4 text-sm text-muted-foreground">No course selected. Please choose a class first.</p>
         <Button asChild variant="outline" className="h-10 border-border bg-white px-4 text-sm font-semibold text-foreground hover:bg-muted">
           <Link href="/teacher/classes">Back to classes</Link>
         </Button>
@@ -65,10 +65,10 @@ export default function NewAssignmentPage() {
 
       const data = await response.json();
       if (response.ok) {
-        setMessage("Assignment created.");
+        setMessage("Done.");
         router.push(`/teacher/assignments/${data.assignment._id}/rubric`);
       } else {
-        setMessage(data.error || "Failed to create assignment.");
+        setMessage(data.error || "Failed to create.");
       }
     } catch (error) {
       setMessage("Network error creating assignment.");
@@ -84,9 +84,8 @@ export default function NewAssignmentPage() {
       </Link>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">New assignment</p>
-          <h1 className="text-3xl font-semibold leading-tight">Create assignment</h1>
-          <p className="text-sm text-muted-foreground">Course ID: {courseId}</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Create new</p>
+          <h1 className="text-3xl font-semibold leading-tight">Assignment</h1>
         </div>
       </div>
 
@@ -99,30 +98,30 @@ export default function NewAssignmentPage() {
             onChange={(event) => setTitle(event.target.value)}
             required
             className="w-full border border-border bg-white px-3 py-2 text-sm"
-            placeholder="Essay on the American Dream"
+            placeholder="E.g., Essay on the American Dream"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold">Short description</label>
+          <label className="mb-2 block text-sm font-semibold">Description</label>
           <input
             type="text"
             value={description}
             onChange={(event) => setDescription(event.target.value)}
             className="w-full border border-border bg-white px-3 py-2 text-sm"
-            placeholder="Brief summary students will see"
+            placeholder="Short summary for students"
           />
         </div>
 
         <div>
-          <label className="mb-2 block text-sm font-semibold">Instructions</label>
+          <label className="mb-2 block text-sm font-semibold">Prompt</label>
           <textarea
             value={instructions}
             onChange={(event) => setInstructions(event.target.value)}
             required
             rows={8}
             className="w-full border border-border bg-white px-3 py-2 text-sm"
-            placeholder="Paste the detailed assignment prompt"
+            placeholder="Paste your full assignment instructions..."
           />
         </div>
 
@@ -142,7 +141,7 @@ export default function NewAssignmentPage() {
           disabled={submitting}
           className="h-10 bg-primary px-6 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
         >
-          {submitting ? "Creating..." : "Create assignment"}
+          {submitting ? "Creating..." : "Create"}
         </Button>
 
         {message && (
