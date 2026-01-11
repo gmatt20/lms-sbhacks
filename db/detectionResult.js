@@ -34,12 +34,15 @@ const detectionResultSchema = new mongoose.Schema({
         type: Number, 
         min: 0, 
         max: 100,
-        required: true 
+        required: true,
+        default: 0
     }, // Percentage indicating likelihood of AI-generated content
-    // Higher score = more likely AI-generated (more matches to modified PDF)
+    // Higher score = more likely AI-generated (more matches to modified instructions/PDF)
     
-    // Flags and conclusions
-    isFlagged: { type: Boolean, default: false },
+    // Threshold and flagging
+    threshold: { type: Number, default: 70, min: 0, max: 100 }, // Score threshold for flagging (default 70%)
+    thresholdExceeded: { type: Boolean, default: false }, // Whether score exceeded threshold
+    isFlagged: { type: Boolean, default: false }, // Flagged if aiDetectionScore >= threshold
     flagReason: String,
     confidenceLevel: { 
         type: String, 
