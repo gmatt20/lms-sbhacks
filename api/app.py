@@ -730,6 +730,12 @@ def get_assignment_submissions(assignment_id):
         for submission in submissions:
             submission["_id"] = str(submission["_id"])
             submission["assignmentId"] = str(submission["assignmentId"])
+            # Convert any other ObjectId fields that might exist
+            if "teacherId" in submission and isinstance(submission["teacherId"], ObjectId):
+                submission["teacherId"] = str(submission["teacherId"])
+            if "interviewResult" in submission and submission["interviewResult"]:
+                if "_id" in submission["interviewResult"] and isinstance(submission["interviewResult"]["_id"], ObjectId):
+                    submission["interviewResult"]["_id"] = str(submission["interviewResult"]["_id"])
         
         print(f"[SUBMISSIONS] Found {len(submissions)} submissions for assignment {assignment_id}")
         return jsonify({"submissions": submissions})
