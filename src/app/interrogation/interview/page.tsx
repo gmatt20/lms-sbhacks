@@ -181,13 +181,6 @@ export default function InterviewPage() {
     }
     
     console.log('[Audio] Pushing to queue, queue length before:', audioQueueRef.current.length);
-    // Cap queue size to avoid uncontrolled growth under poor networks
-    const MAX_QUEUE = 80;
-    if (audioQueueRef.current.length >= MAX_QUEUE) {
-      const drop = audioQueueRef.current.length - MAX_QUEUE + 1;
-      audioQueueRef.current.splice(0, drop);
-      console.warn('[Audio] Queue capped, dropped oldest', drop, 'chunks');
-    }
     audioQueueRef.current.push(buffer);
     console.log('[Audio] Queue length after:', audioQueueRef.current.length);
 
@@ -398,6 +391,8 @@ ${submissionText.slice(0, 5000)}
 """
 
 CRITICAL RULES:
+- NEVER read out or repeat text from the submission in your messages
+- If you need to show text to the user, use show_text_segment() - don't speak it
 - ADAPT to their responses - if they give you an answer, acknowledge it and move forward, even if incomplete
 - DO NOT repeat the same question if they've already answered or moved past it
 - BE FLEXIBLE - if they demonstrate understanding in their own way, accept it and continue
@@ -412,6 +407,7 @@ STYLE:
 - Use acknowledgments: "Got it," "Thanks," "Okay," then ask next question
 - NO numbering or labeling questions
 - Stay neutral: no assessments of right/wrong
+- DO NOT quote or read text aloud - use the function instead
 
 SNIPPET USAGE:
 - Keep snippets SHORT (1-3 sentences max)
@@ -459,16 +455,7 @@ End the interview once you have a reasonable sense of their understanding. Don't
     });
 
     dgClient.on(AgentEvents.ConversationText, (m: any) => {
-      // Batch transcript updates with a small delay to prevent excessive re-renders
-      setTranscript((prev) => {
-        // Check if we should merge with the last message
-        if (prev.length > 0 && prev[prev.length - 1].role === m.role) {
-          const last = prev[prev.length - 1];
-          const merged = { role: last.role, content: `${last.content} ${m.content}`.trim() };
-          return [...prev.slice(0, -1), merged];
-        }
-        return [...prev, { role: m.role, content: m.content }];
-      });
+      setTranscript((prev) => [...prev, { role: m.role, content: m.content }]);
     });
 
     // Handle function calls from the LLM (guarded parsing so we never throw)
@@ -634,7 +621,7 @@ End the interview once you have a reasonable sense of their understanding. Don't
 
             {/* Transcript */}
             {transcript.length > 0 && (
-              <div className="border border-border bg-white rounded-lg p-6 max-h-screen overflow-y-auto space-y-4 shadow-sm">
+              <div className="border border-border bg-white rounded-lg p-6 max-h-[50vh] overflow-y-auto space-y-4 shadow-sm">
                 {transcript.map((msg, idx) => (
                   <div key={idx} className={msg.role === 'user' ? 'text-right' : 'text-left'}>
                     <div className={`inline-block max-w-xs px-4 py-2 rounded-lg ${msg.role === 'user' ? 'bg-muted text-foreground' : 'bg-gray-100 text-foreground border border-border'}`}>
