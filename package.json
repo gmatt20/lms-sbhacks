@@ -19,6 +19,7 @@
     "filepond": "^4.32.11",
     "lucide-react": "^0.562.0",
     "mongodb": "^6.21.0",
+    "mongoose": "^9.1.2",
     "multer": "^2.0.2",
     "next": "16.1.1",
     "pdf-parse": "^2.4.5",

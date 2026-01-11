@@ -1,26 +1,31 @@
 import { DeepgramClient } from "@deepgram/sdk";
 import { NextResponse } from "next/server.js";
-import { auth } from "@clerk/nextjs/server";
 
 /**
  * Proxy endpoint to keep the main API key secure on the server
  * while allowing frontend components to authenticate with Deepgram services.
  */
 export async function GET() {
-  const clerkAuth = await auth();
+  // This should be set in your .env.local file as DEEPGRAM_API_KEY
+  const key = process.env.DEEPGRAM_API_KEY;
 
-  // Check if user is authenticated
-  if (!clerkAuth || !clerkAuth.userId) {
-    return new NextResponse("Unauthorized", { status: 401 });
+  if (!key) {
+    return new NextResponse("Deepgram API key is not set", { status: 500 });
   }
 
-  // Get Clerk session token (JWT)
-  const token = await clerkAuth.getToken(); // Replace with your template if needed
+  const client = new DeepgramClient({ key });
 
-  if (!token) {
-    return new NextResponse("Failed to generate Clerk token", { status: 500 });
+  // 1-hour expiration for security
+  const tokenResponse = await client.auth.grantToken({ ttl_seconds: 3600 });
+
+  if (tokenResponse.error) {
+    return new NextResponse(
+      `Error generating token: ${tokenResponse.error.message}`,
+      { status: 500 },
+    );
   }
+
+  const token = tokenResponse.result.access_token;
 
   return new NextResponse(JSON.stringify({ token }));
 }
-
