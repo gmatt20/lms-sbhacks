@@ -30,7 +30,6 @@ export default function InterviewPage() {
   const isPlayingRef = useRef(false);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
-  const transcriptRef = useRef<Array<{ role: string; content: string }>>([]);
 
   // Keep ref in sync with state for access in closures/timeouts
   useEffect(() => {
