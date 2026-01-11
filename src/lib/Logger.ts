@@ -84,21 +84,21 @@ class DualLogger {
 export const logger = new DualLogger();
 
 // Convenience functions for common voice agent events
-export const voiceAgentLog = {
-  auth: (message: string, data?: LogData) =>
-    logger.logSync(`🔐 AUTH: ${message}`, data),
-  connection: (message: string, data?: LogData) =>
-    logger.logSync(`🔌 CONNECTION: ${message}`, data),
-  agentEvent: (message: string, data?: LogData) =>
-    logger.logSync(`🤖 AGENT EVENT: ${message}`, data),
-  audio: (message: string, data?: LogData) =>
-    logger.logSync(`🔊 AUDIO: ${message}`, data),
-  conversation: (message: string, data?: LogData) =>
-    logger.logSync(`💬 CONVERSATION: ${message}`, data),
-  error: (message: string, data?: LogData) =>
-    logger.errorSync(`❌ ERROR: ${message}`, data),
-  microphone: (message: string, data?: LogData) =>
-    logger.logSync(`🎙️ MICROPHONE: ${message}`, data),
-  keepalive: (message: string, data?: LogData) =>
-    logger.logSync(`💓 KEEPALIVE: ${message}`, data),
-};
+// export const voiceAgentLog = {
+//   auth: (message: string, data?: LogData) =>
+//     logger.logSync(`🔐 AUTH: ${message}`, data),
+//   connection: (message: string, data?: LogData) =>
+//     logger.logSync(`🔌 CONNECTION: ${message}`, data),
+//   agentEvent: (message: string, data?: LogData) =>
+//     logger.logSync(`🤖 AGENT EVENT: ${message}`, data),
+//   audio: (message: string, data?: LogData) =>
+//     logger.logSync(`🔊 AUDIO: ${message}`, data),
+//   conversation: (message: string, data?: LogData) =>
+//     logger.logSync(`💬 CONVERSATION: ${message}`, data),
+//   error: (message: string, data?: LogData) =>
+//     logger.errorSync(`❌ ERROR: ${message}`, data),
+//   microphone: (message: string, data?: LogData) =>
+//     logger.logSync(`🎙️ MICROPHONE: ${message}`, data),
+//   keepalive: (message: string, data?: LogData) =>
+//     logger.logSync(`💓 KEEPALIVE: ${message}`, data),
+// };

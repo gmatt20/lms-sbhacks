@@ -8,7 +8,6 @@ import {
   DeepgramClient,
   type AgentLiveClient,
 } from "@deepgram/sdk";
-import { voiceAgentLog } from "@/lib/Logger";
 import { Button } from "../ui/button";
 
 /**
@@ -25,9 +24,7 @@ export const Body = () => {
   const [connected, setConnected] = useState<boolean>(false);
 
   // Agent configuration
-  const [listenModel, setListenModel] = useState<ListenModel>(
-    ListenModel.Flux,
-  );
+  const [listenModel, setListenModel] = useState<ListenModel>(ListenModel.Flux);
   const [thinkModel, setThinkModel] = useState<ThinkModel>(ThinkModel.Claude);
   const [speechModel, setSpeechModel] = useState<SpeechModel>(
     SpeechModel.Thalia,
@@ -79,7 +76,6 @@ export const Body = () => {
 
   // === AUTHENTICATION ===
   const authenticate = () => {
-    voiceAgentLog.auth("Starting authentication process...");
     fetch("/api/token", {
       method: "GET",
       headers: {
@@ -89,20 +85,12 @@ export const Body = () => {
       .then(async (response) => {
         if (response.ok) {
           const data = await response.json();
-          voiceAgentLog.auth(
-            "Authentication successful - Token received and stored",
-          );
           setToken(data.token);
         } else {
           const errorText = await response.text();
-          voiceAgentLog.error(`Authentication failed: ${errorText}`);
-          setError(`Authentication failed: ${errorText}`);
         }
       })
-      .catch((error) => {
-        voiceAgentLog.error(`Authentication failed: ${error.message}`);
-        setError(`Authentication failed: ${error.message}`);
-      });
+      .catch((error) => {});
   };
 
   // === CONNECTION MANAGEMENT ===
@@ -152,16 +140,10 @@ export const Body = () => {
       return;
     }
 
-    voiceAgentLog.connection("Creating Deepgram Agent client...");
     const client = new DeepgramClient({ accessToken: token }).agent();
     setClient(client);
 
-    voiceAgentLog.connection("Deepgram Agent client created successfully");
     client.once(AgentEvents.Welcome, (welcomeMessage) => {
-      voiceAgentLog.agentEvent(
-        "Welcome - Connected to Deepgram agent",
-        welcomeMessage,
-      );
       const settings = {
         audio: {
           input: {
@@ -197,14 +179,9 @@ export const Body = () => {
           },
         },
       };
-      voiceAgentLog.agentEvent("Applying agent configuration", settings);
       client.configure(settings);
     });
     client.once(AgentEvents.SettingsApplied, (appliedSettings) => {
-      voiceAgentLog.agentEvent(
-        "SettingsApplied - Configuration successful",
-        appliedSettings,
-      );
       setConnected(true);
       setMicState("open");
 
@@ -232,17 +209,14 @@ export const Body = () => {
       }, 8000);
     });
     client.on(AgentEvents.Error, (error) => {
-      voiceAgentLog.error("Agent error occurred", error);
       setError(`Agent error: ${error.message}`);
     });
     client.on(AgentEvents.Audio, async (audio: Uint8Array) => {
-      voiceAgentLog.audio(`Audio chunk received: ${audio.length} bytes`);
       // Add chunk to queue for sequential playback
       audioQueueRef.current.push(audio);
       processAudioQueue();
     });
     client.on(AgentEvents.AgentAudioDone, () => {
-      voiceAgentLog.agentEvent("AgentAudioDone - Agent finished speaking");
       // Don't set isAgentSpeaking false here - let the queue finish
     });
 
@@ -297,7 +271,6 @@ export const Body = () => {
             if (audioContext.currentTime >= nextStartTimeRef.current - 0.1) {
               if (audioQueueRef.current.length === 0) {
                 setIsAgentSpeaking(false);
-                voiceAgentLog.audio("Agent finished speaking");
               }
             }
           };
@@ -307,41 +280,41 @@ export const Body = () => {
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : String(error);
-        voiceAgentLog.error("Audio queue processing error", errorMessage);
       }
     };
     client.on(AgentEvents.ConversationText, (message) => {
-      voiceAgentLog.conversation(
-        `${message.role.toUpperCase()}: "${message.content}"`,
-        message,
-      );
       setTranscript((prev) => [
         ...prev,
         { role: message.role, content: message.content },
       ]);
+      try {
+        const response = fetch("http://localhost:3000/api/interviews", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            transcript,
+          }),
+        });
+      } catch (error) {
+        console.error("Error while adding transcript:", error);
+        throw error;
+      }
     });
 
     // === EVENT HANDLERS ===
     // Additional event handlers for comprehensive logging
     client.on(AgentEvents.UserStartedSpeaking, () => {
-      voiceAgentLog.agentEvent("UserStartedSpeaking - User began speaking");
       // Handle user interruption: clear audio queue and stop playback
       audioQueueRef.current = [];
       nextStartTimeRef.current = 0;
       setIsAgentSpeaking(false);
-      voiceAgentLog.audio("User interruption - cleared audio queue");
     });
 
-    client.on(AgentEvents.AgentStartedSpeaking, (data) => {
-      voiceAgentLog.agentEvent(
-        "AgentStartedSpeaking - Agent began response",
-        data,
-      );
-    });
+    client.on(AgentEvents.AgentStartedSpeaking, (data) => {});
 
-    client.on(AgentEvents.Close, (closeEvent) => {
-      voiceAgentLog.connection("Agent connection closed", closeEvent);
-    });
+    client.on(AgentEvents.Close, (closeEvent) => {});
   };
 
   // === UI RENDER ===
@@ -358,8 +331,13 @@ export const Body = () => {
       {!token && (
         <div className="shadow p-6 bg-white dark:bg-gray-900">
           <h2 className="text-xl font-bold mb-2">Start a quick voice check</h2>
+          <p className="text-blue-600 bg-blue-100 border border-blue-300 p-2 rounded mb-4">
+            Get a token to open the line; then you can speak and listen right
+            away.
+          </p>
           <p className="text-blue-600 bg-blue-100 border border-blue-300 p-2 mb-4">
-            Get a token to open the line; then you can speak and listen right away.
+            Get a token to open the line; then you can speak and listen right
+            away.
           </p>
           <Button
             className="bg-blue-600 text-white px-4 py-2 hover:bg-blue-700 text-lg"
@@ -443,10 +421,11 @@ export const Body = () => {
           <div className="shadow p-6 bg-white dark:bg-gray-900">
             <h2 className="text-xl font-bold mb-2">Voice channel ready</h2>
             <div
-              className={`${isAgentSpeaking
-                ? "text-blue-700 bg-blue-200 border border-blue-400 p-2"
-                : "text-green-700 bg-green-200 border border-green-400 p-2"
-                }`}
+              className={`${
+                isAgentSpeaking
+                  ? "text-blue-700 bg-blue-200 border border-blue-400 p-2"
+                  : "text-green-700 bg-green-200 border border-green-400 p-2"
+              }`}
             >
               {isAgentSpeaking
                 ? "🔊 Speaking now, please listen"
